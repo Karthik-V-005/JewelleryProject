@@ -631,7 +631,12 @@ export class StoreService {
     file?: Express.Multer.File,
   ) {
     await this.getAdminStoreById(storeId);
-    let proofDocUrl = null;
+    let proofDocUrl =
+      (data as any).proofDocUrl ||
+      (data as any).documentLink ||
+      (data as any).documentLinkOrGstin ||
+      (data as any).gstin ||
+      null;
     if (file) {
       const upload: any = await this.cloudinary.uploadImage(
         file,

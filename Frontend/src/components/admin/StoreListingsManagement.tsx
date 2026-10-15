@@ -16,7 +16,13 @@ import {
   updateAdminStoreClaim, getAdminStoreReports, updateAdminStoreReport,
   submitStoreClaim, submitStoreReport
 } from "../../api/api";
+import { WhatsAppIcon } from "../common/WhatsAppIcon";
 import "../../styles/store-listings.css";
+
+const getUserPanelStoreUrl = (slug: string) => {
+  const baseUrl = (import.meta as any).env?.VITE_USER_PANEL_URL || "http://localhost:5173";
+  return `${baseUrl.replace(/\/$/, '')}/stores/${slug}`;
+};
 
 const PRESET_CATEGORIES = [
   "Gold", "Diamond", "Polki", "Kundan", "Bridal", "Antique",
@@ -680,16 +686,6 @@ export function StoreListingsManagement() {
           </button>
 
           <button
-            onClick={handleCreateDemoStore}
-            disabled={isSubmitting}
-            className="sl-btn-demo"
-            title="Create a sample jewellery store (Tanishq) with photos and offers to test"
-          >
-            <Sparkles size={14} style={{ color: "#8c6800" }} />
-            <span style={{ color: "#8c6800", fontWeight: 700 }}>+ Add Demo Store</span>
-          </button>
-
-          <button
             onClick={handleOpenCreate}
             className="sl-btn-primary"
             title="Create a new store profile directly"
@@ -933,36 +929,42 @@ export function StoreListingsManagement() {
                             )}
                           </div>
                           <span className="sl-store-slug">/{store.slug}</span>
-                          <div className="sl-store-meta-tags">
-                            <a
-                              href={`tel:${store.phone}`}
-                              style={{ color: "inherit", textDecoration: "none" }}
-                              title="Call store phone"
-                            >
-                              📞 {store.phone}
-                            </a>
-                            {store.whatsapp && (
+                          {/* Store Quick Contact Row */}
+                          <div className="sl-store-contact-row">
+                            {store.phone && (
                               <a
-                                href={`https://wa.me/${store.whatsapp.replace(/[^0-9]/g, '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}
-                                title="Open WhatsApp chat"
+                                href={`tel:${store.phone}`}
+                                className="sl-phone-chip"
+                                title={`Call: ${store.phone}`}
                               >
-                                💬 WA
+                                <Phone size={11} className="sl-phone-icon" />
+                                <span>{store.phone}</span>
                               </a>
                             )}
-                            {store.website && (
-                              <a
-                                href={store.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: "#2563eb", fontWeight: 700, textDecoration: "none" }}
-                                title="Visit official website"
-                              >
-                                🌐 Web
-                              </a>
-                            )}
+                            <div className="sl-quick-icons-group">
+                              {store.whatsapp && (
+                                <a
+                                  href={`https://wa.me/${store.whatsapp.replace(/[^0-9]/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="sl-quick-icon-btn whatsapp"
+                                  title={`WhatsApp: ${store.whatsapp}`}
+                                >
+                                  <WhatsAppIcon size={13} />
+                                </a>
+                              )}
+                              {store.website && (
+                                <a
+                                  href={store.website}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="sl-quick-icon-btn website"
+                                  title={`Visit Website: ${store.website}`}
+                                >
+                                  <Globe size={13} />
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1055,12 +1057,12 @@ export function StoreListingsManagement() {
                         </button>
 
                         <a
-                          href={`/store/${store.slug}`}
+                          href={getUserPanelStoreUrl(store.slug)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="sl-icon-btn"
-                          title="Open Public Customer Page in New Tab"
-                          style={{ color: "#2563eb", textDecoration: "none" }}
+                          title={`Open Live Store Page on User Panel (${getUserPanelStoreUrl(store.slug)})`}
+                          style={{ color: "#7b1a4a", textDecoration: "none" }}
                         >
                           <ExternalLink size={15} />
                         </a>
@@ -1815,9 +1817,21 @@ export function StoreListingsManagement() {
                   Customer Live Profile Preview
                 </span>
               </div>
-              <button onClick={() => setPreviewStore(null)} className="sl-modal-close-btn">
-                <X size={17} />
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <a
+                  href={getUserPanelStoreUrl(previewStore.slug)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sl-preview-open-userpanel-btn"
+                  title="Open this store profile page on the customer User Panel website"
+                >
+                  <span>Open on User Panel</span>
+                  <ExternalLink size={13} />
+                </a>
+                <button onClick={() => setPreviewStore(null)} className="sl-modal-close-btn">
+                  <X size={17} />
+                </button>
+              </div>
             </div>
 
             {/* Profile Content */}
@@ -1832,103 +1846,111 @@ export function StoreListingsManagement() {
 
               {/* Store Details Box */}
               <div className="sl-preview-content">
-                {/* Hero identity row */}
-                <div className="sl-preview-hero-row">
-                  <div className="sl-preview-store-brand">
-                    <div className="sl-preview-logo-box">
-                      {previewStore.logo_url ? (
-                        <img src={previewStore.logo_url} alt={previewStore.store_name} />
-                      ) : (
-                        <Building2 size={36} style={{ color: "#b8849a" }} />
-                      )}
-                    </div>
-                    <div className="sl-preview-name-group">
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                        <h2 className="sl-preview-title">{previewStore.store_name}</h2>
-                        {previewStore.is_verified && (
-                          <span className="sl-badge-toggle verified" style={{ cursor: "default" }}>
-                            <ShieldCheck size={13} style={{ color: "#b4860b" }} />
-                            <span>Verified Jeweller</span>
-                          </span>
+                <div className="sl-preview-card">
+                  {/* Hero identity row matching Screenshot 3 */}
+                  <div className="sl-preview-store-header">
+                    <div className="sl-preview-identity-left">
+                      <div className="sl-preview-logo-box">
+                        {previewStore.logo_url ? (
+                          <img src={previewStore.logo_url} alt={previewStore.store_name} />
+                        ) : (
+                          <Building2 size={36} style={{ color: "#b8849a" }} />
                         )}
                       </div>
-                      <p className="sl-preview-loc-line">
-                        📍 {previewStore.city}, {previewStore.state} • Last updated: {new Date(previewStore.updated_at).toLocaleDateString()}
-                      </p>
+                      <div className="sl-preview-title-block">
+                        <div className="sl-preview-title-row">
+                          <h2 className="sl-preview-title">{previewStore.store_name}</h2>
+                          {previewStore.is_verified && (
+                            <span className="sl-badge-toggle verified" style={{ cursor: "default" }}>
+                              <ShieldCheck size={14} style={{ color: "#b4860b" }} />
+                              <span>Verified Jeweller</span>
+                            </span>
+                          )}
+                        </div>
+                        <p className="sl-preview-loc-text">
+                          <MapPin size={14} style={{ color: "#dc2626", flexShrink: 0 }} />
+                          <span>
+                            <strong>{previewStore.address}</strong> • {previewStore.city}, {previewStore.state} {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
+                          </span>
+                        </p>
+                        {previewStore.categories && previewStore.categories.length > 0 && (
+                          <div className="sl-preview-cats-wrap">
+                            {previewStore.categories.map((c, i) => (
+                              <span key={i} className="sl-cat-badge">{c}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="sl-preview-meta-right">
+                      <span className={`sl-badge-toggle ${previewStore.status === "PUBLISHED" ? "published" : "draft"}`}>
+                        <span className={`sl-status-dot ${previewStore.status === "PUBLISHED" ? "green" : "amber"}`} />
+                        {previewStore.status}
+                      </span>
+                      <span className="sl-preview-updated-date">
+                        Listing updated: {previewStore.updated_at ? new Date(previewStore.updated_at).toLocaleDateString() : "Recently"}
+                      </span>
                     </div>
                   </div>
 
-                  <span className={`sl-badge-toggle ${previewStore.status === "PUBLISHED" ? "published" : "draft"}`}>
-                    <span className={`sl-status-dot ${previewStore.status === "PUBLISHED" ? "green" : "amber"}`} />
-                    {previewStore.status}
-                  </span>
-                </div>
+                  {/* ── 4 BIG CUSTOMER CONTACT CTAs ── */}
+                  <div className="sl-cta-grid">
+                    <a
+                      href={previewStore.website || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`sl-cta-btn website ${!previewStore.website ? "disabled" : ""}`}
+                      style={!previewStore.website ? { opacity: 0.5, pointerEvents: "none" } : {}}
+                    >
+                      <Globe size={16} />
+                      <span>Visit Website</span>
+                    </a>
 
-                {/* ── 4 BIG CUSTOMER CONTACT CTAs ── */}
-                <div className="sl-cta-grid">
-                  <a
-                    href={previewStore.website || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`sl-cta-btn website ${!previewStore.website ? "disabled" : ""}`}
-                    style={!previewStore.website ? { opacity: 0.5, pointerEvents: "none" } : {}}
-                  >
-                    <Globe size={16} />
-                    <span>Visit Website</span>
-                  </a>
+                    <a
+                      href={
+                        previewStore.google_maps_link ||
+                        `https://maps.google.com/?q=${encodeURIComponent(`${previewStore.store_name} ${previewStore.address} ${previewStore.city}`)}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="sl-cta-btn directions"
+                    >
+                      <MapPin size={16} style={{ color: "#dc2626" }} />
+                      <span>Get Directions</span>
+                    </a>
 
-                  <a
-                    href={
-                      previewStore.google_maps_link ||
-                      `https://maps.google.com/?q=${encodeURIComponent(`${previewStore.store_name} ${previewStore.address} ${previewStore.city}`)}`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="sl-cta-btn directions"
-                  >
-                    <MapPin size={16} style={{ color: "#dc2626" }} />
-                    <span>Get Directions</span>
-                  </a>
+                    <a
+                      href={`tel:${previewStore.phone}`}
+                      className="sl-cta-btn call"
+                    >
+                      <Phone size={16} />
+                      <span>Call Store</span>
+                    </a>
 
-                  <a
-                    href={`tel:${previewStore.phone}`}
-                    className="sl-cta-btn call"
-                  >
-                    <Phone size={16} />
-                    <span>Call Store</span>
-                  </a>
-
-                  <a
-                    href={
-                      previewStore.whatsapp
-                        ? `https://wa.me/${previewStore.whatsapp.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(previewStore.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
-                        : `https://wa.me/${previewStore.phone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(previewStore.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="sl-cta-btn whatsapp"
-                  >
-                    <MessageSquare size={16} />
-                    <span>WhatsApp Store</span>
-                  </a>
-                </div>
-
-                {/* About & Category Tags */}
-                <div style={{ marginBottom: "20px" }}>
-                  {previewStore.short_description && (
-                    <p style={{ fontSize: "14px", lineHeight: "1.7", color: "#47303d", marginBottom: "12px" }}>
-                      {previewStore.short_description}
-                    </p>
-                  )}
-
-                  <div className="sl-cat-badge-wrap" style={{ maxWidth: "100%" }}>
-                    {previewStore.categories?.map((c, i) => (
-                      <span key={i} className="sl-cat-badge" style={{ padding: "4px 10px", fontSize: "12px" }}>
-                        {c}
-                      </span>
-                    ))}
+                    <a
+                      href={
+                        previewStore.whatsapp
+                          ? `https://wa.me/${previewStore.whatsapp.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(previewStore.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
+                          : `https://wa.me/${previewStore.phone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(previewStore.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="sl-cta-btn whatsapp"
+                    >
+                      <WhatsAppIcon size={16} />
+                      <span>WhatsApp Store</span>
+                    </a>
                   </div>
-                </div>
+
+                  {/* About Store Description */}
+                  {previewStore.short_description && (
+                    <div style={{ marginBottom: "20px" }}>
+                      <p style={{ fontSize: "14px", lineHeight: "1.7", color: "#47303d", margin: 0 }}>
+                        {previewStore.short_description}
+                      </p>
+                    </div>
+                  )}
 
                 {/* Timings & Address Details Box */}
                 <div className="sl-grid-2" style={{ marginBottom: "22px" }}>
@@ -2055,7 +2077,8 @@ export function StoreListingsManagement() {
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* ═══════════════════════════════════════════════════════════
           MODAL: Customer "Claim or Update This Store" Dialog
@@ -2132,14 +2155,24 @@ export function StoreListingsManagement() {
               </div>
 
               <div className="sl-field">
-                <label className="sl-label">Upload Proof Document / Card <span className="opt">(optional)</span></label>
+                <label className="sl-label">
+                  Upload Proof Document / Card <span className="opt">(PDF, JPG, PNG — Max 10MB)</span>
+                </label>
                 <input
                   type="file"
-                  accept="image/*,.pdf"
+                  accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/*"
                   onChange={(e) => setClaimProofFile(e.target.files?.[0] || null)}
                   className="sl-input"
                   style={{ padding: "6px" }}
                 />
+                <span style={{ fontSize: "11px", color: "#8a7b82", marginTop: "3px", display: "block" }}>
+                  Accepted formats: <strong>PDF (.pdf)</strong>, <strong>JPG (.jpg, .jpeg)</strong>, <strong>PNG (.png)</strong>, <strong>WebP</strong> (e.g. GST Certificate, Trade License, Shop Act, or Business Card).
+                </span>
+                {claimProofFile && (
+                  <div style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "6px", padding: "3px 8px", backgroundColor: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: "6px", fontSize: "11.5px", color: "#065f46", fontWeight: 600 }}>
+                    <span>✓ Selected: {claimProofFile.name} ({(claimProofFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                  </div>
+                )}
               </div>
 
               <div className="sl-field">
@@ -2310,19 +2343,111 @@ export function StoreListingsManagement() {
                       <div style={{ fontSize: "13px", color: "#3b202c" }}>
                         Claimant: <strong>{c.claimant_name}</strong> • Phone: <a href={`tel:${c.claimant_phone}`}>{c.claimant_phone}</a> • Email: <a href={`mailto:${c.claimant_email}`}>{c.claimant_email}</a>
                       </div>
-                      {c.proof_type && (
-                        <div style={{ fontSize: "12px", color: "#6b5860" }}>
-                          Proof Document: <strong>{c.proof_type}</strong>
-                          {c.proof_doc_url && (
-                            <a
-                              href={c.proof_doc_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{ marginLeft: "8px", color: "#2563eb", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "2px" }}
-                            >
-                              <ExternalLink size={12} /> View Document
-                            </a>
-                          )}
+                      {/* Formatted Proof Document Section */}
+                      {(c.proof_type || c.proof_doc_url) && (
+                        <div className="sl-proof-card">
+                          <div className="sl-proof-header">
+                            📋 Proof Type: <strong>{c.proof_type || "Business Verification"}</strong>
+                          </div>
+                          {c.proof_doc_url && (() => {
+                            const url = c.proof_doc_url.trim();
+                            const isGstin = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/i.test(url) || (url.length === 15 && !url.includes("/") && !url.includes("."));
+                            const isPdf = /\.pdf($|\?)/i.test(url) || url.includes("application/pdf");
+                            const isImage = /\.(jpg|jpeg|png|webp|gif|svg)($|\?)/i.test(url) || url.includes("/image/upload");
+                            const isDrive = url.includes("drive.google.com") || url.includes("dropbox.com") || url.includes("onedrive");
+
+                            if (isGstin) {
+                              return (
+                                <div className="sl-proof-gstin-box">
+                                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                    <span className="sl-gstin-badge">GSTIN Format</span>
+                                    <code className="sl-gstin-code">{url.toUpperCase()}</code>
+                                  </div>
+                                  <a
+                                    href="https://services.gst.gov.in/services/searchtpbypan"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="sl-proof-link-btn gstin"
+                                    title="Verify GSTIN on official Government GST portal"
+                                  >
+                                    <span>Verify on GST Portal</span>
+                                    <ExternalLink size={12} />
+                                  </a>
+                                </div>
+                              );
+                            }
+
+                            if (isPdf) {
+                              const filename = url.split('/').pop()?.split('?')[0] || "Verification_Document.pdf";
+                              return (
+                                <div className="sl-proof-file-box">
+                                  <div className="sl-proof-file-info">
+                                    <span className="sl-file-icon pdf">PDF</span>
+                                    <div>
+                                      <div className="sl-proof-filename">{filename}</div>
+                                      <span className="sl-proof-file-format">Adobe Acrobat Portable Document</span>
+                                    </div>
+                                  </div>
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="sl-proof-link-btn"
+                                  >
+                                    <span>View PDF Document</span>
+                                    <ExternalLink size={12} />
+                                  </a>
+                                </div>
+                              );
+                            }
+
+                            if (isImage) {
+                              const filename = url.split('/').pop()?.split('?')[0] || "Proof_Image";
+                              return (
+                                <div className="sl-proof-file-box">
+                                  <div className="sl-proof-file-info">
+                                    <a href={url} target="_blank" rel="noopener noreferrer">
+                                      <img src={url} alt="Proof" className="sl-proof-img-thumb" />
+                                    </a>
+                                    <div>
+                                      <div className="sl-proof-filename">{filename}</div>
+                                      <span className="sl-proof-file-format">Image Document (JPG/PNG/WebP)</span>
+                                    </div>
+                                  </div>
+                                  <a
+                                    href={url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="sl-proof-link-btn"
+                                  >
+                                    <span>View Full Image</span>
+                                    <ExternalLink size={12} />
+                                  </a>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className="sl-proof-file-box">
+                                <div className="sl-proof-file-info">
+                                  <span className="sl-file-icon link">{isDrive ? "CLOUD" : "LINK"}</span>
+                                  <div>
+                                    <div className="sl-proof-filename">{url}</div>
+                                    <span className="sl-proof-file-format">{isDrive ? "Google Drive / Cloud Folder" : "External Document Link"}</span>
+                                  </div>
+                                </div>
+                                <a
+                                  href={url.startsWith("http") ? url : `https://${url}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="sl-proof-link-btn"
+                                >
+                                  <span>Open Document Link</span>
+                                  <ExternalLink size={12} />
+                                </a>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                       {c.notes && (

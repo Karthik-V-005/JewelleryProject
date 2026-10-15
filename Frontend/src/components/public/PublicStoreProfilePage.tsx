@@ -9,8 +9,11 @@ import {
   getPublicStoreProfile, submitStoreClaim, submitStoreReport,
   StoreListing
 } from "../../api/api";
+import { WhatsAppIcon } from "../common/WhatsAppIcon";
 import icon from "../../assets/icon.png";
 import "../../styles/public-store.css";
+
+const userPanelUrl = (import.meta as any).env?.VITE_USER_PANEL_URL || "http://localhost:5173";
 
 interface PublicStoreProfilePageProps {
   slug?: string;
@@ -34,7 +37,9 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
   const [claimName, setClaimName] = useState("");
   const [claimPhone, setClaimPhone] = useState("");
   const [claimEmail, setClaimEmail] = useState("");
-  const [claimProofType, setClaimProofType] = useState("GST Certificate");
+  const [claimProofType, setClaimProofType] = useState("GSTIN / Business Registration Certificate");
+  const [claimGstinOrDoc, setClaimGstinOrDoc] = useState("");
+  const [showOptionalUpload, setShowOptionalUpload] = useState(false);
   const [claimFile, setClaimFile] = useState<File | null>(null);
   const [claimNotes, setClaimNotes] = useState("");
   const [isSubmittingClaim, setIsSubmittingClaim] = useState(false);
@@ -84,19 +89,33 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
   const handleSubmitClaim = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!store) return;
-    if (!claimName || !claimPhone || !claimEmail) {
+    if (!claimName.trim() || !claimPhone.trim() || !claimEmail.trim()) {
       toast.error("Please fill in your name, phone, and email.");
+      return;
+    }
+
+    if (claimProofType.includes("GST") && !claimGstinOrDoc.trim() && !claimFile) {
+      toast.error("Please enter your 15-digit GSTIN number or attach your certificate.");
+      return;
+    }
+
+    if (claimProofType.includes("Visiting Card") && !claimFile && !claimGstinOrDoc.trim()) {
+      toast.error("Please upload a photo of your business visiting card.");
       return;
     }
 
     setIsSubmittingClaim(true);
     try {
       const fd = new FormData();
-      fd.append("claimantName", claimName);
-      fd.append("claimantPhone", claimPhone);
-      fd.append("claimantEmail", claimEmail);
+      fd.append("claimantName", claimName.trim());
+      fd.append("claimantPhone", claimPhone.trim());
+      fd.append("claimantEmail", claimEmail.trim());
       fd.append("proofType", claimProofType);
-      if (claimNotes) fd.append("notes", claimNotes);
+      if (claimGstinOrDoc.trim()) {
+        fd.append("gstin", claimGstinOrDoc.trim().toUpperCase());
+        fd.append("documentLinkOrGstin", claimGstinOrDoc.trim().toUpperCase());
+      }
+      if (claimNotes.trim()) fd.append("notes", claimNotes.trim());
       if (claimFile) fd.append("proofDocument", claimFile);
 
       await submitStoreClaim(store.id, fd);
@@ -105,6 +124,7 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
       setClaimName("");
       setClaimPhone("");
       setClaimEmail("");
+      setClaimGstinOrDoc("");
       setClaimFile(null);
       setClaimNotes("");
     } catch (err: any) {
@@ -206,8 +226,9 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
           </div>
 
           <nav className="pub-nav-links">
-            <a href="https://jewellersparadise.com/" className="pub-nav-link">Home</a>
-            <a href="https://jewellersparadise.com/offers" className="pub-nav-link">Offers</a>
+            <a href={`${userPanelUrl}/`} className="pub-nav-link">Home</a>
+            <a href={`${userPanelUrl}/stores`} className="pub-nav-link">Stores</a>
+            <a href={`${userPanelUrl}/offers`} className="pub-nav-link">Offers</a>
             <button
               onClick={handleShare}
               className="pub-nav-link"
@@ -321,7 +342,7 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
               rel="noopener noreferrer"
               className="pub-cta-btn whatsapp"
             >
-              <MessageSquare size={18} style={{ color: "#ffffff" }} />
+              <WhatsAppIcon size={18} style={{ color: "#ffffff" }} />
               <span style={{ color: "#ffffff" }}>WhatsApp Store</span>
             </a>
           </div>
@@ -532,36 +553,160 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
                 </div>
 
                 <div className="sl-field">
-                  <label className="sl-label">Verification Document Type</label>
+                  <label className="sl-label">Proof of Business Ownership <span className="req">*</span></label>
                   <select
                     value={claimProofType}
-                    onChange={(e) => setClaimProofType(e.target.value)}
+                    onChange={(e) => {
+                      setClaimProofType(e.target.value);
+                      setClaimGstinOrDoc("");
+                      setClaimFile(null);
+                      setShowOptionalUpload(false);
+                    }}
                     className="sl-select"
                   >
-                    <option value="GST Certificate">GST Certificate</option>
-                    <option value="Business Card / Visiting Card">Business Card / Visiting Card</option>
-                    <option value="Shop & Establishment License">Shop & Establishment License</option>
-                    <option value="Utility Bill">Store Utility Bill</option>
-                    <option value="Other Official Proof">Other Official Document</option>
+                    <option value="GSTIN / Business Registration Certificate">GSTIN / Business Registration Certificate</option>
+                    <option value="Business Card / Visiting Card">Visiting Card / Store Letterhead</option>
+                    <option value="BIS Hallmark Registration">BIS Hallmark License / Certificate</option>
+                    <option value="Store Lease / Utility Bill">Store Utility Bill / Lease Agreement</option>
+                    <option value="Google Drive / Cloud Link">Google Drive / Cloud Document Link</option>
                   </select>
                 </div>
 
-                <div className="sl-field">
-                  <label className="sl-label">Upload Proof Document (PDF or Photo)</label>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) setClaimFile(e.target.files[0]);
-                    }}
-                    className="sl-input"
-                  />
-                  {claimFile && (
-                    <span style={{ fontSize: "11.5px", color: "#059669", fontWeight: 600 }}>
-                      ✓ Selected: {claimFile.name}
+                {/* ── Dynamic Input Field based on Selected Proof ── */}
+                {claimProofType === "GSTIN / Business Registration Certificate" && (
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      Enter 15-Digit GSTIN Number <span className="req">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={15}
+                      placeholder="e.g. 29AAAAA0000A1Z5"
+                      value={claimGstinOrDoc}
+                      onChange={(e) => setClaimGstinOrDoc(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                      className="sl-input"
+                      style={{ textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, fontFamily: "monospace", fontSize: "14px" }}
+                    />
+                    <div style={{ marginTop: "5px", display: "flex", alignItems: "center", gap: "6px", fontSize: "11.5px", color: "#065f46", backgroundColor: "#ecfdf5", padding: "6px 10px", borderRadius: "6px", border: "1px solid #a7f3d0" }}>
+                      <span>✓ <strong>No file upload needed!</strong> You can simply provide your GST number. Admin will verify it directly on the government GST portal.</span>
+                    </div>
+
+                    <div style={{ marginTop: "10px" }}>
+                      {!showOptionalUpload ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowOptionalUpload(true)}
+                          style={{ background: "none", border: "none", color: "#781846", fontSize: "12px", fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                        >
+                          + Or attach GST Certificate document / PDF (Optional)
+                        </button>
+                      ) : (
+                        <div style={{ marginTop: "8px", padding: "10px", backgroundColor: "#faf6f8", border: "1px dashed #d9c4ce", borderRadius: "8px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                            <span style={{ fontSize: "11.5px", fontWeight: 600, color: "#4c0f2d" }}>Attach GST Document (PDF / Image)</span>
+                            <button
+                              type="button"
+                              onClick={() => { setShowOptionalUpload(false); setClaimFile(null); }}
+                              style={{ background: "none", border: "none", color: "#dc2626", fontSize: "11px", cursor: "pointer" }}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <input
+                            type="file"
+                            accept=".pdf,image/*"
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) setClaimFile(e.target.files[0]);
+                            }}
+                            className="sl-input"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {claimProofType === "Business Card / Visiting Card" && (
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      Upload Visiting Card Photo (JPG, PNG) <span className="req">*</span>
+                    </label>
+                    <input
+                      type="file"
+                      required
+                      accept="image/*,.pdf"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) setClaimFile(e.target.files[0]);
+                      }}
+                      className="sl-input"
+                    />
+                    <span style={{ fontSize: "11.5px", color: "#8a7b82", marginTop: "4px", display: "block" }}>
+                      Please snap or upload a clear photo of your showroom business card or company letterhead showing your designation.
                     </span>
-                  )}
-                </div>
+                    {claimFile && (
+                      <div style={{ marginTop: "6px", display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 8px", backgroundColor: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: "6px", fontSize: "11.5px", color: "#065f46", fontWeight: 600 }}>
+                        <span>✓ Attached: {claimFile.name} ({(claimFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {claimProofType === "BIS Hallmark Registration" && (
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      BIS Hallmark License Number or Certificate <span className="req">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. HM/C - 7894561 or Hallmark Certificate"
+                      value={claimGstinOrDoc}
+                      onChange={(e) => setClaimGstinOrDoc(e.target.value)}
+                      className="sl-input"
+                    />
+                    <span style={{ fontSize: "11.5px", color: "#8a7b82", marginTop: "4px", display: "block" }}>
+                      Enter your Bureau of Indian Standards (BIS) hallmark center license number.
+                    </span>
+                  </div>
+                )}
+
+                {claimProofType === "Store Lease / Utility Bill" && (
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      Upload Electricity Bill or Lease Agreement (PDF/Image) <span className="req">*</span>
+                    </label>
+                    <input
+                      type="file"
+                      required
+                      accept=".pdf,image/*"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) setClaimFile(e.target.files[0]);
+                      }}
+                      className="sl-input"
+                    />
+                    <span style={{ fontSize: "11.5px", color: "#8a7b82", marginTop: "4px", display: "block" }}>
+                      Accepted formats: PDF, JPG, PNG showing the showroom's registered address.
+                    </span>
+                  </div>
+                )}
+
+                {claimProofType === "Google Drive / Cloud Link" && (
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      Google Drive / Cloud Document Link <span className="req">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      required
+                      placeholder="https://drive.google.com/file/d/..."
+                      value={claimGstinOrDoc}
+                      onChange={(e) => setClaimGstinOrDoc(e.target.value)}
+                      className="sl-input"
+                    />
+                    <span style={{ fontSize: "11.5px", color: "#8a7b82", marginTop: "4px", display: "block" }}>
+                      Ensure link sharing permissions are set to "Anyone with the link can view".
+                    </span>
+                  </div>
+                )}
 
                 <div className="sl-field">
                   <label className="sl-label">Additional Notes</label>

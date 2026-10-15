@@ -51,6 +51,10 @@ export class StoreController {
       claimantPhone: string;
       claimantEmail: string;
       proofType?: string;
+      proofDocUrl?: string;
+      documentLink?: string;
+      gstin?: string;
+      documentLinkOrGstin?: string;
       notes?: string;
     },
   ) {
