@@ -407,6 +407,201 @@ export const deleteProduct = (id: number) =>
   API.delete<{ message: string }>(`/admin/products/${id}`);
 
 /* ======================================================
+   STORE LISTINGS MANAGEMENT APIs (Admin-Managed Stores)
+   ====================================================== */
+
+export interface StoreGalleryItem {
+  id: number;
+  store_id: number;
+  image_url: string;
+  caption?: string | null;
+  display_order: number;
+  created_at: string;
+}
+
+export interface StoreOfferItem {
+  id: number;
+  store_id: number;
+  title: string;
+  description?: string | null;
+  poster_url?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  terms?: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface StoreClaimItem {
+  id: number;
+  store_id: number;
+  claimant_name: string;
+  claimant_phone: string;
+  claimant_email: string;
+  proof_type?: string | null;
+  proof_doc_url?: string | null;
+  notes?: string | null;
+  status: string;
+  admin_notes?: string | null;
+  created_at: string;
+  store?: {
+    id: number;
+    store_name: string;
+    city: string;
+    phone: string;
+  };
+}
+
+export interface StoreReportItem {
+  id: number;
+  store_id: number;
+  report_type: string;
+  description: string;
+  reported_by_email?: string | null;
+  status: string;
+  admin_notes?: string | null;
+  created_at: string;
+  store?: {
+    id: number;
+    store_name: string;
+    city: string;
+  };
+}
+
+export interface StoreListing {
+  id: number;
+  slug: string;
+  store_name: string;
+  logo_url: string | null;
+  cover_photo_url: string | null;
+  short_description: string | null;
+  categories: string[];
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  google_maps_link: string | null;
+  phone: string;
+  whatsapp: string | null;
+  website: string | null;
+  social_links: Record<string, string> | null;
+  opening_hours: string | null;
+  weekly_holiday: string | null;
+  status: "DRAFT" | "PUBLISHED" | "UNPUBLISHED" | string;
+  is_verified: boolean;
+  info_source?: string | null;
+  store_contact?: string | null;
+  photo_permissions?: string | null;
+  internal_notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  published_at?: string | null;
+  gallery?: StoreGalleryItem[];
+  offers?: StoreOfferItem[];
+  _count?: {
+    gallery: number;
+    offers: number;
+    claim_requests: number;
+    report_requests: number;
+  };
+}
+
+export const getAdminStoreListings = (params?: {
+  status?: string;
+  search?: string;
+  isVerified?: string;
+}) =>
+  API.get<StoreListing[]>("/admin/stores", { params });
+
+export const getAdminStoreById = (id: number) =>
+  API.get<StoreListing>(`/admin/stores/${id}`);
+
+export const createAdminStoreListing = (formData: FormData) =>
+  API.post<StoreListing>("/admin/stores", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+export const updateAdminStoreListing = (id: number, formData: FormData) =>
+  API.patch<StoreListing>(`/admin/stores/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+export const deleteAdminStoreListing = (id: number) =>
+  API.delete<{ success: boolean; message: string }>(`/admin/stores/${id}`);
+
+export const toggleAdminStorePublish = (id: number, status: string) =>
+  API.patch<StoreListing>(`/admin/stores/${id}/publish`, { status });
+
+export const toggleAdminStoreVerification = (id: number, isVerified?: boolean) =>
+  API.patch<StoreListing>(`/admin/stores/${id}/verify`, { isVerified });
+
+export const uploadAdminStoreGallery = (id: number, formData: FormData) =>
+  API.post<StoreGalleryItem[]>(`/admin/stores/${id}/gallery`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+export const deleteAdminStoreGalleryImage = (storeId: number, imageId: number) =>
+  API.delete<{ success: boolean; message: string }>(
+    `/admin/stores/${storeId}/gallery/${imageId}`,
+  );
+
+export const addAdminStoreOffer = (storeId: number, formData: FormData) =>
+  API.post<StoreOfferItem>(`/admin/stores/${storeId}/offers`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+export const deleteAdminStoreOffer = (offerId: number) =>
+  API.delete<{ success: boolean; message: string }>(
+    `/admin/stores/offers/${offerId}`,
+  );
+
+export const getAdminStoreClaims = () =>
+  API.get<StoreClaimItem[]>("/admin/stores/claims");
+
+export const updateAdminStoreClaim = (
+  claimId: number,
+  data: { status: string; adminNotes?: string },
+) => API.patch<StoreClaimItem>(`/admin/stores/claims/${claimId}`, data);
+
+export const getAdminStoreReports = () =>
+  API.get<StoreReportItem[]>("/admin/stores/reports");
+
+export const updateAdminStoreReport = (
+  reportId: number,
+  data: { status: string; adminNotes?: string },
+) => API.patch<StoreReportItem>(`/admin/stores/reports/${reportId}`, data);
+
+/* ======================================================
+   PUBLIC STORE LISTINGS APIs (Customer-facing)
+   ====================================================== */
+
+export const getPublicStores = (params?: {
+  search?: string;
+  city?: string;
+  state?: string;
+  category?: string;
+  page?: number;
+  limit?: number;
+}) => API.get("/stores", { params });
+
+export const getPublicStoreProfile = (slugOrId: string | number) =>
+  API.get(`/stores/${slugOrId}`);
+
+export const submitStoreClaim = (storeId: number, formData: FormData) =>
+  API.post(`/stores/${storeId}/claim`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
+export const submitStoreReport = (
+  storeId: number,
+  data: {
+    reportType: string;
+    description: string;
+    reportedByEmail?: string;
+  },
+) => API.post(`/stores/${storeId}/report`, data);
+
+/* ======================================================
    EXPORT AXIOS INSTANCE (optional)
    ====================================================== */
 

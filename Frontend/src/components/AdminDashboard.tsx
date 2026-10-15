@@ -6,6 +6,7 @@ import { OfferManagement } from "./admin/OfferManagement";
 import { LocationManagement } from "./admin/LocationManagement";
 import { PlanManagement } from "./admin/PlanManagement";
 import { ProductManagement } from "./admin/ProductManagement";
+import { StoreListingsManagement } from "./admin/StoreListingsManagement";
 import { VendorDetailsPage } from "./admin/VendorDetailsPage";
 import { OfferDetailsPage } from "./admin/OfferDetailsPage";
 import { Footer } from "./Footer";
@@ -18,7 +19,7 @@ interface AdminDashboardProps {
   onLogout: () => void;
 }
 
-type AdminTab = "vendors" | "offers" | "locations" | "plans" | "products";
+type AdminTab = "vendors" | "offers" | "stores" | "locations" | "plans" | "products";
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>("vendors");
@@ -44,6 +45,10 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         setActiveTab('offers');
       } else if (fullPath === '/offers' || fullPath === '/offer') {
         setActiveTab('offers');
+        setViewingVendorId(null);
+        setViewingOfferId(null);
+      } else if (fullPath === '/stores' || fullPath === '/store') {
+        setActiveTab('stores');
         setViewingVendorId(null);
         setViewingOfferId(null);
       } else if (fullPath === '/locations' || fullPath === '/location') {
@@ -116,6 +121,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const menuItems = [
     { id: "vendors" as AdminTab, label: "Vendors", path: '/vendors' },
     { id: "offers" as AdminTab, label: "Offers", path: '/offers' },
+    { id: "stores" as AdminTab, label: "Store Listings", path: '/stores' },
     { id: "plans" as AdminTab, label: "Plan", path: '/plans' },
     { id: "locations" as AdminTab, label: "Location", path: '/locations' },
     { id: "products" as AdminTab, label: "Product", path: '/products' },
@@ -225,6 +231,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <div key={refreshKey}>
               {activeTab === "vendors" && <VendorManagement onViewVendor={handleViewVendor} />}
               {activeTab === "offers" && <OfferManagement onViewOffer={handleViewOffer} />}
+              {activeTab === "stores" && <StoreListingsManagement />}
               {activeTab === "locations" && <LocationManagement />}
               {activeTab === "plans" && <PlanManagement />}
               {activeTab === "products" && <ProductManagement />}

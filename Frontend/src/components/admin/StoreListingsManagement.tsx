@@ -1,0 +1,2445 @@
+import { useState, useEffect, useMemo } from "react";
+import {
+  Search, Plus, Eye, Pencil, Trash2, CheckCircle2, AlertTriangle,
+  Loader2, RefreshCw, X, Globe, Phone, MessageSquare, MapPin,
+  Clock, ShieldCheck, ShieldAlert, ImagePlus, Camera,
+  Building2, Tag, AlertCircle, Sparkles, Check, ExternalLink,
+  RotateCcw
+} from "lucide-react";
+import { toast } from "sonner";
+import {
+  StoreListing, StoreGalleryItem, StoreOfferItem, StoreClaimItem, StoreReportItem,
+  getAdminStoreListings, getAdminStoreById, createAdminStoreListing,
+  updateAdminStoreListing, deleteAdminStoreListing, toggleAdminStorePublish,
+  toggleAdminStoreVerification, deleteAdminStoreGalleryImage,
+  addAdminStoreOffer, deleteAdminStoreOffer, getAdminStoreClaims,
+  updateAdminStoreClaim, getAdminStoreReports, updateAdminStoreReport,
+  submitStoreClaim, submitStoreReport
+} from "../../api/api";
+import "../../styles/store-listings.css";
+
+const PRESET_CATEGORIES = [
+  "Gold", "Diamond", "Polki", "Kundan", "Bridal", "Antique",
+  "Temple Jewellery", "Silver", "Platinum", "Gemstones", "Daily Wear"
+];
+
+const WEEKLY_DAYS = [
+  "None", "Sunday", "Monday", "Tuesday", "Wednesday",
+  "Thursday", "Friday", "Saturday"
+];
+
+/* ─── Image Dropzone Component ─── */
+function DropZone({
+  id, preview, onFile, onRemove, label, required, hint = "Click to upload"
+}: {
+  id: string; preview: string | null; onFile: (f: File) => void;
+  onRemove?: () => void; label: string; required?: boolean; hint?: string;
+}) {
+  return (
+    <div className="sl-field">
+      <label className="sl-label">
+        {label}
+        {required ? <span className="req">*</span> : <span className="opt">(optional)</span>}
+      </label>
+      <input
+        type="file"
+        accept="image/*"
+        id={id}
+        style={{ display: "none" }}
+        onChange={(e) => { if (e.target.files?.[0]) onFile(e.target.files[0]); }}
+      />
+      <label htmlFor={id} className="sl-dropzone">
+        {preview ? (
+          <>
+            <img src={preview} alt={label} className="sl-dropzone-preview" />
+            <div className="sl-dropzone-overlay">
+              <Camera size={18} />
+              <span>Change Photo</span>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+            <div style={{
+              width: "40px", height: "40px", borderRadius: "12px",
+              backgroundColor: "#f5e8ef", color: "#4C0F2D",
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              <ImagePlus size={20} />
+            </div>
+            <span style={{ fontSize: "12.5px", fontWeight: 700, color: "#3b202c" }}>{label}</span>
+            <span style={{ fontSize: "11px", color: "#8a7b81" }}>{hint}</span>
+          </div>
+        )}
+      </label>
+      {preview && onRemove && (
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(); }}
+          className="sl-remove-img-btn"
+          title="Remove photo"
+        >
+          <X size={13} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT: StoreListingsManagement
+   ═══════════════════════════════════════════════════════════════ */
+export function StoreListingsManagement() {
+  const [stores, setStores] = useState<StoreListing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
+  const [selectedCity, setSelectedCity] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [verifiedFilter, setVerifiedFilter] = useState<boolean>(false);
+
+  // Modals & Drawers
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingStore, setEditingStore] = useState<StoreListing | null>(null);
+  const [previewStore, setPreviewStore] = useState<StoreListing | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<StoreListing | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Claims & Reports modal
+  const [isRequestsModalOpen, setIsRequestsModalOpen] = useState(false);
+  const [claims, setClaims] = useState<StoreClaimItem[]>([]);
+  const [reports, setReports] = useState<StoreReportItem[]>([]);
+  const [requestsTab, setRequestsTab] = useState<"claims" | "reports">("claims");
+
+  // Customer preview interaction modals
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  const [claimName, setClaimName] = useState("");
+  const [claimPhone, setClaimPhone] = useState("");
+  const [claimEmail, setClaimEmail] = useState("");
+  const [claimProofType, setClaimProofType] = useState("GST Certificate");
+  const [claimNotes, setClaimNotes] = useState("");
+  const [claimProofFile, setClaimProofFile] = useState<File | null>(null);
+  const [isSubmittingClaim, setIsSubmittingClaim] = useState(false);
+
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportType, setReportType] = useState("Wrong Phone/Contact");
+  const [reportDesc, setReportDesc] = useState("");
+  const [reportEmail, setReportEmail] = useState("");
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+
+  // Form State
+  const [formStoreName, setFormStoreName] = useState("");
+  const [formSlug, setFormSlug] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formCategories, setFormCategories] = useState<string[]>([]);
+  const [customCategoryInput, setCustomCategoryInput] = useState("");
+
+  const [formAddress, setFormAddress] = useState("");
+  const [formCity, setFormCity] = useState("");
+  const [formState, setFormState] = useState("");
+  const [formPincode, setFormPincode] = useState("");
+  const [formMapsLink, setFormMapsLink] = useState("");
+
+  const [formPhone, setFormPhone] = useState("");
+  const [formWhatsapp, setFormWhatsapp] = useState("");
+  const [formWebsite, setFormWebsite] = useState("");
+  const [formInstagram, setFormInstagram] = useState("");
+  const [formFacebook, setFormFacebook] = useState("");
+
+  const [formOpeningHours, setFormOpeningHours] = useState("");
+  const [formWeeklyHoliday, setFormWeeklyHoliday] = useState("None");
+
+  const [formStatus, setFormStatus] = useState<"DRAFT" | "PUBLISHED" | "UNPUBLISHED">("DRAFT");
+  const [formIsVerified, setFormIsVerified] = useState(false);
+
+  // Private Admin Audit Fields
+  const [formInfoSource, setFormInfoSource] = useState("");
+  const [formStoreContact, setFormStoreContact] = useState("");
+  const [formPhotoPermissions, setFormPhotoPermissions] = useState("");
+  const [formInternalNotes, setFormInternalNotes] = useState("");
+
+  // Media files
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [removeLogo, setRemoveLogo] = useState(false);
+
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [removeCover, setRemoveCover] = useState(false);
+
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [existingGallery, setExistingGallery] = useState<StoreGalleryItem[]>([]);
+
+  // Offers in store
+  const [existingOffers, setExistingOffers] = useState<StoreOfferItem[]>([]);
+  const [newOfferTitle, setNewOfferTitle] = useState("");
+  const [newOfferDesc, setNewOfferDesc] = useState("");
+  const [newOfferStart, setNewOfferStart] = useState("");
+  const [newOfferEnd, setNewOfferEnd] = useState("");
+  const [newOfferTerms, setNewOfferTerms] = useState("");
+  const [newOfferPoster, setNewOfferPoster] = useState<File | null>(null);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  /* ─── Fetch All Stores ─── */
+  const fetchStores = async () => {
+    setIsLoading(true);
+    try {
+      const res = await getAdminStoreListings();
+      setStores(res.data);
+    } catch (err: any) {
+      if (err.response?.status === 401) {
+        toast.error("Admin session expired. Please re-login with password 'Admin@496'.");
+      } else {
+        toast.error("Failed to load store listings");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchRequests = async () => {
+    try {
+      const [cRes, rRes] = await Promise.all([
+        getAdminStoreClaims(),
+        getAdminStoreReports(),
+      ]);
+      setClaims(cRes.data);
+      setReports(rRes.data);
+    } catch {
+      // non-blocking
+    }
+  };
+
+  useEffect(() => {
+    fetchStores();
+    fetchRequests();
+  }, []);
+
+  /* ─── Unique Cities list for filter ─── */
+  const availableCities = useMemo(() => {
+    const set = new Set<string>();
+    stores.forEach((s) => {
+      if (s.city) set.add(s.city.trim());
+    });
+    return Array.from(set).sort();
+  }, [stores]);
+
+  const hasActiveFilters = useMemo(() => {
+    return (
+      searchQuery.trim() !== "" ||
+      selectedCategory !== "ALL" ||
+      selectedCity !== "ALL" ||
+      statusFilter !== "ALL" ||
+      verifiedFilter
+    );
+  }, [searchQuery, selectedCategory, selectedCity, statusFilter, verifiedFilter]);
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("ALL");
+    setSelectedCity("ALL");
+    setStatusFilter("ALL");
+    setVerifiedFilter(false);
+  };
+
+  /* ─── Filtered Stores ─── */
+  const filteredStores = useMemo(() => {
+    return stores.filter((s) => {
+      const matchesStatus = statusFilter === "ALL" || s.status === statusFilter;
+      const matchesVerified = !verifiedFilter || s.is_verified;
+      const matchesCategory =
+        selectedCategory === "ALL" ||
+        (s.categories && s.categories.some((c) => c.toLowerCase() === selectedCategory.toLowerCase()));
+      const matchesCity =
+        selectedCity === "ALL" ||
+        (s.city && s.city.toLowerCase() === selectedCity.toLowerCase());
+
+      const q = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        q === "" ||
+        s.store_name.toLowerCase().includes(q) ||
+        s.city.toLowerCase().includes(q) ||
+        s.state.toLowerCase().includes(q) ||
+        s.phone.toLowerCase().includes(q) ||
+        (s.slug && s.slug.toLowerCase().includes(q));
+
+      return matchesStatus && matchesVerified && matchesCategory && matchesCity && matchesSearch;
+    });
+  }, [stores, statusFilter, verifiedFilter, selectedCategory, selectedCity, searchQuery]);
+
+  /* ─── Stats ─── */
+  const stats = useMemo(() => {
+    return {
+      total: stores.length,
+      published: stores.filter((s) => s.status === "PUBLISHED").length,
+      drafts: stores.filter((s) => s.status === "DRAFT").length,
+      verified: stores.filter((s) => s.is_verified).length,
+    };
+  }, [stores]);
+
+  /* ─── Create Sample Demo Store (1-Click Test) ─── */
+  const handleCreateDemoStore = async () => {
+    setIsSubmitting(true);
+    const fd = new FormData();
+    const demoSlug = `tanishq-indiranagar-${Math.floor(100 + Math.random() * 900)}`;
+    fd.append("storeName", "Tanishq Jewellers — Indiranagar Flagship");
+    fd.append("slug", demoSlug);
+    fd.append(
+      "shortDescription",
+      "India's most trusted luxury jewellery house featuring exquisite 22K Hallmarked Gold, Solitaire Diamonds, and Bridal Polki collections with lifetime exchange guarantee."
+    );
+    fd.append("categories", JSON.stringify(["Gold", "Diamond", "Bridal", "Polki"]));
+    fd.append("address", "Plot No. 542, CMH Road, 1st Stage, Indiranagar");
+    fd.append("city", "Bangalore");
+    fd.append("state", "Karnataka");
+    fd.append("pincode", "560038");
+    fd.append("googleMapsLink", "https://maps.google.com/?q=Tanishq+Indiranagar+Bangalore");
+    fd.append("phone", "+91 9845012345");
+    fd.append("whatsapp", "+91 9845012345");
+    fd.append("website", "https://www.tanishq.co.in");
+    fd.append("socialLinks", JSON.stringify({ instagram: "https://instagram.com/tanishqjewellery", facebook: "https://facebook.com/tanishq" }));
+    fd.append("openingHours", "10:30 AM - 08:30 PM");
+    fd.append("weeklyHoliday", "None");
+    fd.append("status", "PUBLISHED");
+    fd.append("isVerified", "true");
+    fd.append("infoSource", "Official Brand Partner Network");
+    fd.append("storeContact", "Store Manager: Mr. Rajesh Sharma (+91 9845012345)");
+    fd.append("photoPermissions", "Direct Brand Showroom Approval");
+    fd.append("internalNotes", "Verified GSTIN and trade license. Flagship showroom verified on 14 Oct 2026.");
+    fd.append("coverPhotoUrl", "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=1200&q=80");
+
+    try {
+      const res = await createAdminStoreListing(fd);
+      toast.success("Demo store 'Tanishq Jewellers' created successfully!");
+      setStores((prev) => [res.data, ...prev]);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to create demo store");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /* ─── Open Create Modal ─── */
+  const handleOpenCreate = () => {
+    setEditingStore(null);
+    setFormStoreName("");
+    setFormSlug("");
+    setFormDescription("");
+    setFormCategories(["Gold", "Diamond"]);
+    setFormAddress("");
+    setFormCity("");
+    setFormState("");
+    setFormPincode("");
+    setFormMapsLink("");
+    setFormPhone("");
+    setFormWhatsapp("");
+    setFormWebsite("");
+    setFormInstagram("");
+    setFormFacebook("");
+    setFormOpeningHours("10:30 AM - 08:30 PM");
+    setFormWeeklyHoliday("None");
+    setFormStatus("DRAFT");
+    setFormIsVerified(false);
+    setFormInfoSource("");
+    setFormStoreContact("");
+    setFormPhotoPermissions("");
+    setFormInternalNotes("");
+    setLogoFile(null);
+    setLogoPreview(null);
+    setRemoveLogo(false);
+    setCoverFile(null);
+    setCoverPreview(null);
+    setRemoveCover(false);
+    setGalleryFiles([]);
+    setExistingGallery([]);
+    setExistingOffers([]);
+    setIsFormOpen(true);
+  };
+
+  /* ─── Open Edit Modal ─── */
+  const handleOpenEdit = async (store: StoreListing) => {
+    setEditingStore(store);
+    try {
+      const res = await getAdminStoreById(store.id);
+      const s = res.data;
+      setFormStoreName(s.store_name || "");
+      setFormSlug(s.slug || "");
+      setFormDescription(s.short_description || "");
+      setFormCategories(s.categories || []);
+      setFormAddress(s.address || "");
+      setFormCity(s.city || "");
+      setFormState(s.state || "");
+      setFormPincode(s.pincode || "");
+      setFormMapsLink(s.google_maps_link || "");
+      setFormPhone(s.phone || "");
+      setFormWhatsapp(s.whatsapp || "");
+      setFormWebsite(s.website || "");
+      setFormInstagram(s.social_links?.instagram || "");
+      setFormFacebook(s.social_links?.facebook || "");
+      setFormOpeningHours(s.opening_hours || "");
+      setFormWeeklyHoliday(s.weekly_holiday || "None");
+      setFormStatus((s.status as any) || "DRAFT");
+      setFormIsVerified(s.is_verified);
+      setFormInfoSource(s.info_source || "");
+      setFormStoreContact(s.store_contact || "");
+      setFormPhotoPermissions(s.photo_permissions || "");
+      setFormInternalNotes(s.internal_notes || "");
+      setLogoFile(null);
+      setLogoPreview(s.logo_url || null);
+      setRemoveLogo(false);
+      setCoverFile(null);
+      setCoverPreview(s.cover_photo_url || null);
+      setRemoveCover(false);
+      setGalleryFiles([]);
+      setExistingGallery(s.gallery || []);
+      setExistingOffers(s.offers || []);
+      setIsFormOpen(true);
+    } catch {
+      toast.error("Failed to load store details");
+    }
+  };
+
+  /* ─── Category Toggle ─── */
+  const toggleCategory = (cat: string) => {
+    setFormCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const handleAddCustomCategory = () => {
+    if (customCategoryInput.trim() && !formCategories.includes(customCategoryInput.trim())) {
+      setFormCategories((prev) => [...prev, customCategoryInput.trim()]);
+      setCustomCategoryInput("");
+    }
+  };
+
+  /* ─── Save Store (Create or Update) ─── */
+  const handleSaveStore = async (targetStatus?: "DRAFT" | "PUBLISHED") => {
+    if (!formStoreName.trim()) return toast.error("Store Name is required");
+    if (!formAddress.trim()) return toast.error("Address is required");
+    if (!formCity.trim()) return toast.error("City is required");
+    if (!formState.trim()) return toast.error("State is required");
+    if (!formPincode.trim()) return toast.error("PIN code is required");
+    if (!formPhone.trim()) return toast.error("Business Phone is required");
+
+    setIsSubmitting(true);
+    const fd = new FormData();
+    fd.append("storeName", formStoreName.trim());
+    if (formSlug.trim()) fd.append("slug", formSlug.trim());
+    fd.append("shortDescription", formDescription.trim());
+    fd.append("categories", JSON.stringify(formCategories));
+    fd.append("address", formAddress.trim());
+    fd.append("city", formCity.trim());
+    fd.append("state", formState.trim());
+    fd.append("pincode", formPincode.trim());
+    if (formMapsLink.trim()) fd.append("googleMapsLink", formMapsLink.trim());
+    fd.append("phone", formPhone.trim());
+    if (formWhatsapp.trim()) fd.append("whatsapp", formWhatsapp.trim());
+    if (formWebsite.trim()) fd.append("website", formWebsite.trim());
+
+    const social: Record<string, string> = {};
+    if (formInstagram.trim()) social.instagram = formInstagram.trim();
+    if (formFacebook.trim()) social.facebook = formFacebook.trim();
+    fd.append("socialLinks", JSON.stringify(social));
+
+    if (formOpeningHours.trim()) fd.append("openingHours", formOpeningHours.trim());
+    fd.append("weeklyHoliday", formWeeklyHoliday);
+
+    const finalStatus = targetStatus || formStatus;
+    fd.append("status", finalStatus);
+    fd.append("isVerified", formIsVerified ? "true" : "false");
+
+    // Private admin audit
+    if (formInfoSource.trim()) fd.append("infoSource", formInfoSource.trim());
+    if (formStoreContact.trim()) fd.append("storeContact", formStoreContact.trim());
+    if (formPhotoPermissions.trim()) fd.append("photoPermissions", formPhotoPermissions.trim());
+    if (formInternalNotes.trim()) fd.append("internalNotes", formInternalNotes.trim());
+
+    if (logoFile) fd.append("logo", logoFile);
+    if (coverFile) fd.append("coverPhoto", coverFile);
+    if (removeLogo) fd.append("removeLogo", "true");
+    if (removeCover) fd.append("removeCover", "true");
+
+    galleryFiles.forEach((file) => {
+      fd.append("gallery", file);
+    });
+
+    try {
+      if (editingStore) {
+        const res = await updateAdminStoreListing(editingStore.id, fd);
+        toast.success(finalStatus === "PUBLISHED" ? "Store published successfully!" : "Store listing updated!");
+        setStores((prev) => prev.map((s) => (s.id === editingStore.id ? res.data : s)));
+      } else {
+        const res = await createAdminStoreListing(fd);
+        toast.success(finalStatus === "PUBLISHED" ? "Store published successfully!" : "Draft store listing saved!");
+        setStores((prev) => [res.data, ...prev]);
+      }
+      setIsFormOpen(false);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to save store listing");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  /* ─── Delete Store ─── */
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteAdminStoreListing(deleteTarget.id);
+      toast.success("Store listing removed");
+      setStores((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Failed to delete store listing");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  /* ─── Quick Toggle Publish ─── */
+  const handleTogglePublish = async (store: StoreListing) => {
+    const nextStatus = store.status === "PUBLISHED" ? "UNPUBLISHED" : "PUBLISHED";
+    try {
+      await toggleAdminStorePublish(store.id, nextStatus);
+      toast.success(nextStatus === "PUBLISHED" ? `"${store.store_name}" is now live!` : `"${store.store_name}" unpublished`);
+      setStores((prev) =>
+        prev.map((s) => (s.id === store.id ? { ...s, status: nextStatus } : s))
+      );
+    } catch {
+      toast.error("Failed to update status");
+    }
+  };
+
+  /* ─── Quick Toggle Verification ─── */
+  const handleToggleVerification = async (store: StoreListing) => {
+    const nextVerified = !store.is_verified;
+    try {
+      await toggleAdminStoreVerification(store.id, nextVerified);
+      toast.success(nextVerified ? `Verified Jeweller badge assigned!` : `Verification badge removed`);
+      setStores((prev) =>
+        prev.map((s) => (s.id === store.id ? { ...s, is_verified: nextVerified } : s))
+      );
+    } catch {
+      toast.error("Failed to update verification");
+    }
+  };
+
+  /* ─── Remove Gallery Image ─── */
+  const handleDeleteGalleryImage = async (imageId: number) => {
+    if (!editingStore) return;
+    try {
+      await deleteAdminStoreGalleryImage(editingStore.id, imageId);
+      toast.success("Image removed from gallery");
+      setExistingGallery((prev) => prev.filter((g) => g.id !== imageId));
+    } catch {
+      toast.error("Failed to delete image");
+    }
+  };
+
+  /* ─── Add Store Offer ─── */
+  const handleAddOffer = async () => {
+    if (!editingStore) return;
+    if (!newOfferTitle.trim()) return toast.error("Offer title is required");
+
+    const fd = new FormData();
+    fd.append("title", newOfferTitle.trim());
+    if (newOfferDesc.trim()) fd.append("description", newOfferDesc.trim());
+    if (newOfferStart) fd.append("startDate", newOfferStart);
+    if (newOfferEnd) fd.append("endDate", newOfferEnd);
+    if (newOfferTerms.trim()) fd.append("terms", newOfferTerms.trim());
+    fd.append("isActive", "true");
+    if (newOfferPoster) fd.append("poster", newOfferPoster);
+
+    try {
+      const res = await addAdminStoreOffer(editingStore.id, fd);
+      toast.success("Offer attached to store!");
+      setExistingOffers((prev) => [res.data, ...prev]);
+      setNewOfferTitle("");
+      setNewOfferDesc("");
+      setNewOfferStart("");
+      setNewOfferEnd("");
+      setNewOfferTerms("");
+      setNewOfferPoster(null);
+    } catch {
+      toast.error("Failed to add offer");
+    }
+  };
+
+  /* ─── Delete Store Offer ─── */
+  const handleDeleteOffer = async (offerId: number) => {
+    try {
+      await deleteAdminStoreOffer(offerId);
+      toast.success("Offer removed");
+      setExistingOffers((prev) => prev.filter((o) => o.id !== offerId));
+    } catch {
+      toast.error("Failed to delete offer");
+    }
+  };
+
+  /* ─── Submit Claim from Customer Preview ─── */
+  const handleSubmitCustomerClaim = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!previewStore) return;
+    if (!claimName.trim() || !claimPhone.trim() || !claimEmail.trim()) {
+      return toast.error("Name, Phone, and Email are required");
+    }
+
+    setIsSubmittingClaim(true);
+    const fd = new FormData();
+    fd.append("claimantName", claimName.trim());
+    fd.append("claimantPhone", claimPhone.trim());
+    fd.append("claimantEmail", claimEmail.trim());
+    fd.append("proofType", claimProofType);
+    if (claimNotes.trim()) fd.append("notes", claimNotes.trim());
+    if (claimProofFile) fd.append("proofDocument", claimProofFile);
+
+    try {
+      await submitStoreClaim(previewStore.id, fd);
+      toast.success("Claim submitted successfully! Admin will review your verification details.");
+      setIsClaimModalOpen(false);
+      setClaimName("");
+      setClaimPhone("");
+      setClaimEmail("");
+      setClaimNotes("");
+      setClaimProofFile(null);
+      fetchRequests();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to submit claim request");
+    } finally {
+      setIsSubmittingClaim(false);
+    }
+  };
+
+  /* ─── Submit Correction Report from Customer Preview ─── */
+  const handleSubmitCustomerReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!previewStore) return;
+    if (!reportDesc.trim()) {
+      return toast.error("Please describe the incorrect details");
+    }
+
+    setIsSubmittingReport(true);
+    try {
+      await submitStoreReport(previewStore.id, {
+        reportType,
+        description: reportDesc.trim(),
+        reportedByEmail: reportEmail.trim() || undefined,
+      });
+      toast.success("Report submitted. Thank you for helping keep store details accurate!");
+      setIsReportModalOpen(false);
+      setReportDesc("");
+      setReportEmail("");
+      fetchRequests();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to submit correction report");
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
+  return (
+    <div className="sl-container">
+      {/* ── Header ── */}
+      <div className="sl-header">
+        <div className="sl-title-group">
+          <div className="sl-title-row">
+            <h1 className="sl-main-title">Store Listings</h1>
+            <span className="sl-badge-pill">Admin-Managed</span>
+          </div>
+          <p className="sl-subtitle">
+            Create, verify, and manage jewellery store profiles with contact CTAs, galleries, and active offers.
+          </p>
+        </div>
+
+        <div className="sl-actions-row">
+          <button
+            onClick={() => setIsRequestsModalOpen(true)}
+            className="sl-btn-secondary"
+            title="Review ownership claims and correction reports"
+          >
+            <ShieldAlert size={15} />
+            <span>Claims & Reports</span>
+            {(claims.length > 0 || reports.length > 0) && (
+              <span className="sl-badge-count">
+                {claims.length + reports.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={fetchStores}
+            className="sl-btn-secondary"
+            title="Reload latest listings"
+          >
+            <RefreshCw size={14} className={isLoading ? "sl-spinner" : ""} />
+            <span>Refresh</span>
+          </button>
+
+          <button
+            onClick={handleCreateDemoStore}
+            disabled={isSubmitting}
+            className="sl-btn-demo"
+            title="Create a sample jewellery store (Tanishq) with photos and offers to test"
+          >
+            <Sparkles size={14} style={{ color: "#8c6800" }} />
+            <span style={{ color: "#8c6800", fontWeight: 700 }}>+ Add Demo Store</span>
+          </button>
+
+          <button
+            onClick={handleOpenCreate}
+            className="sl-btn-primary"
+            title="Create a new store profile directly"
+            style={{ color: "#ffffff" }}
+          >
+            <Plus size={16} style={{ color: "#ffffff" }} />
+            <span style={{ color: "#ffffff", fontWeight: 700 }}>Add Store Listing</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ── Stats Summary Bar ── */}
+      <div className="sl-stats-grid">
+        <div className="sl-stat-card plum">
+          <div className="sl-stat-info">
+            <span className="sl-stat-label">Total Listings</span>
+            <span className="sl-stat-value">{stats.total}</span>
+            <span className="sl-stat-sub">Database registered</span>
+          </div>
+          <div className="sl-stat-icon-wrap plum">
+            <Building2 size={22} />
+          </div>
+        </div>
+
+        <div className="sl-stat-card emerald">
+          <div className="sl-stat-info">
+            <span className="sl-stat-label">Live & Published</span>
+            <span className="sl-stat-value" style={{ color: "#059669" }}>{stats.published}</span>
+            <span className="sl-stat-sub" style={{ color: "#059669" }}>Publicly discoverable</span>
+          </div>
+          <div className="sl-stat-icon-wrap emerald">
+            <CheckCircle2 size={22} />
+          </div>
+        </div>
+
+        <div className="sl-stat-card amber">
+          <div className="sl-stat-info">
+            <span className="sl-stat-label">Drafts (Pending)</span>
+            <span className="sl-stat-value" style={{ color: "#d97706" }}>{stats.drafts}</span>
+            <span className="sl-stat-sub" style={{ color: "#d97706" }}>Incomplete details</span>
+          </div>
+          <div className="sl-stat-icon-wrap amber">
+            <Clock size={22} />
+          </div>
+        </div>
+
+        <div className="sl-stat-card gold">
+          <div className="sl-stat-info">
+            <span className="sl-stat-label">Verified Jewellers</span>
+            <span className="sl-stat-value" style={{ color: "#b4860b" }}>{stats.verified}</span>
+            <span className="sl-stat-sub" style={{ color: "#b4860b" }}>Trust badge granted</span>
+          </div>
+          <div className="sl-stat-icon-wrap gold">
+            <ShieldCheck size={22} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Filters & Search Toolbar ── */}
+      <div className="sl-filter-card">
+        <div className="sl-search-box">
+          <Search size={16} className="sl-search-icon" />
+          <input
+            type="text"
+            placeholder="Search stores by name, city, state, phone, or slug..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="sl-search-input"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="sl-search-clear-btn"
+              title="Clear search"
+            >
+              <X size={15} />
+            </button>
+          )}
+        </div>
+
+        <div className="sl-filter-actions">
+          {/* Category Filter */}
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="sl-toolbar-select"
+            title="Filter by jewellery category"
+          >
+            <option value="ALL">All Categories</option>
+            {PRESET_CATEGORIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+
+          {/* City Filter */}
+          {availableCities.length > 0 && (
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              className="sl-toolbar-select"
+              title="Filter by city"
+            >
+              <option value="ALL">All Cities</option>
+              {availableCities.map((ct) => (
+                <option key={ct} value={ct}>{ct}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Status Pills */}
+          <div className="sl-status-pills">
+            {(["ALL", "PUBLISHED", "DRAFT", "UNPUBLISHED"] as const).map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`sl-pill-btn ${statusFilter === st ? "active" : ""}`}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+
+          {/* Verified Only Toggle */}
+          <button
+            onClick={() => setVerifiedFilter(!verifiedFilter)}
+            className={`sl-verified-toggle-btn ${verifiedFilter ? "active" : ""}`}
+            title="Show only stores with Verified Jeweller status"
+          >
+            <ShieldCheck size={14} style={{ color: verifiedFilter ? "#b4860b" : "#9c828e" }} />
+            <span>Verified Only</span>
+          </button>
+
+          {/* Reset Filters button */}
+          {hasActiveFilters && (
+            <button
+              onClick={handleResetFilters}
+              className="sl-clear-filters-btn"
+              title="Reset all filters"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Table & Content Container ── */}
+      <div className="sl-table-container">
+        {isLoading ? (
+          <div className="sl-loading-box">
+            <Loader2 size={32} className="sl-spinner" />
+            <span style={{ fontSize: "14px", fontWeight: 600 }}>Loading jewellery store listings…</span>
+          </div>
+        ) : filteredStores.length === 0 ? (
+          <div className="sl-empty-state">
+            <div className="sl-empty-icon-circle">
+              <Building2 size={36} />
+            </div>
+            <h3 className="sl-empty-title">No store listings found</h3>
+            <p className="sl-empty-desc">
+              {hasActiveFilters
+                ? "No stores match your current filters. Try resetting your search filters or clearing options."
+                : "Get started by adding your first admin-managed jewellery store listing, or generate a sample demo store to test."}
+            </p>
+            <div className="sl-empty-actions">
+              {hasActiveFilters ? (
+                <button
+                  onClick={handleResetFilters}
+                  className="sl-btn-secondary"
+                >
+                  <RotateCcw size={14} /> Clear All Filters
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleOpenCreate}
+                    className="sl-btn-primary"
+                    style={{ color: "#ffffff" }}
+                  >
+                    <Plus size={16} style={{ color: "#ffffff" }} />
+                    <span style={{ color: "#ffffff", fontWeight: 700 }}>Add Store Listing</span>
+                  </button>
+                  <button
+                    onClick={handleCreateDemoStore}
+                    disabled={isSubmitting}
+                    className="sl-btn-demo"
+                  >
+                    <Sparkles size={14} style={{ color: "#8c6800" }} />
+                    <span style={{ color: "#8c6800", fontWeight: 700 }}>+ Create Demo Store</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="sl-table-scroll">
+            <table className="sl-table">
+              <thead>
+                <tr>
+                  <th style={{ minWidth: "190px" }}>Store Identity</th>
+                  <th style={{ minWidth: "140px" }}>Location</th>
+                  <th style={{ minWidth: "120px" }}>Categories</th>
+                  <th style={{ minWidth: "115px" }}>Verification</th>
+                  <th style={{ minWidth: "95px" }}>Status</th>
+                  <th style={{ minWidth: "85px" }}>Last Updated</th>
+                  <th style={{ minWidth: "125px", textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStores.map((store) => (
+                  <tr key={store.id}>
+                    {/* Store Identity */}
+                    <td>
+                      <div className="sl-store-cell">
+                        <div
+                          className="sl-store-avatar"
+                          onClick={() => setPreviewStore(store)}
+                          style={{ cursor: "pointer" }}
+                          title="Click to preview store profile"
+                        >
+                          {store.logo_url ? (
+                            <img src={store.logo_url} alt={store.store_name} />
+                          ) : store.cover_photo_url ? (
+                            <img src={store.cover_photo_url} alt={store.store_name} />
+                          ) : (
+                            <Building2 size={22} style={{ color: "#b8849a" }} />
+                          )}
+                        </div>
+                        <div className="sl-store-details">
+                          <div className="sl-store-name-row">
+                            <span
+                              className="sl-store-name"
+                              onClick={() => setPreviewStore(store)}
+                              title="Click to preview customer profile"
+                            >
+                              {store.store_name}
+                            </span>
+                            {store.is_verified && (
+                              <span title="Verified Jeweller" className="sl-verified-icon">
+                                <ShieldCheck size={15} />
+                              </span>
+                            )}
+                          </div>
+                          <span className="sl-store-slug">/{store.slug}</span>
+                          <div className="sl-store-meta-tags">
+                            <a
+                              href={`tel:${store.phone}`}
+                              style={{ color: "inherit", textDecoration: "none" }}
+                              title="Call store phone"
+                            >
+                              📞 {store.phone}
+                            </a>
+                            {store.whatsapp && (
+                              <a
+                                href={`https://wa.me/${store.whatsapp.replace(/[^0-9]/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: "#059669", fontWeight: 700, textDecoration: "none" }}
+                                title="Open WhatsApp chat"
+                              >
+                                💬 WA
+                              </a>
+                            )}
+                            {store.website && (
+                              <a
+                                href={store.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: "#2563eb", fontWeight: 700, textDecoration: "none" }}
+                                title="Visit official website"
+                              >
+                                🌐 Web
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Location */}
+                    <td>
+                      <div style={{ fontWeight: 700, color: "#2d161d", fontSize: "13px" }}>
+                        {store.city}, {store.state}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#8a7b81", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {store.address}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+                        <span style={{ fontSize: "10px", backgroundColor: "#f3f4f6", color: "#4b5563", padding: "1px 5px", borderRadius: "4px" }}>
+                          PIN: {store.pincode}
+                        </span>
+                        {store.google_maps_link && (
+                          <a
+                            href={store.google_maps_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: "11px", color: "#dc2626", display: "inline-flex", alignItems: "center", gap: "2px", fontWeight: 600, textDecoration: "none" }}
+                            title="View on Google Maps"
+                          >
+                            <MapPin size={11} /> Directions
+                          </a>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Categories */}
+                    <td>
+                      <div className="sl-cat-badge-wrap">
+                        {store.categories?.slice(0, 3).map((c, idx) => (
+                          <span key={idx} className="sl-cat-badge">
+                            {c}
+                          </span>
+                        ))}
+                        {(store.categories?.length || 0) > 3 && (
+                          <span className="sl-cat-more" title={store.categories?.slice(3).join(", ")}>
+                            +{(store.categories?.length || 0) - 3}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Verification Toggle */}
+                    <td>
+                      <button
+                        onClick={() => handleToggleVerification(store)}
+                        className={`sl-badge-toggle ${store.is_verified ? "verified" : "unverified"}`}
+                        title="Click to toggle Verified Jeweller status"
+                      >
+                        <ShieldCheck size={13} style={{ color: store.is_verified ? "#b4860b" : "#9ca3af" }} />
+                        <span>{store.is_verified ? "Verified Jeweller" : "Unverified"}</span>
+                      </button>
+                    </td>
+
+                    {/* Status Toggle */}
+                    <td>
+                      <button
+                        onClick={() => handleTogglePublish(store)}
+                        className={`sl-badge-toggle ${
+                          store.status === "PUBLISHED" ? "published" : store.status === "DRAFT" ? "draft" : "unpublished"
+                        }`}
+                        title="Click to toggle status between Published / Unpublished"
+                      >
+                        <span className={`sl-status-dot ${
+                          store.status === "PUBLISHED" ? "green" : store.status === "DRAFT" ? "amber" : "gray"
+                        }`} />
+                        <span>{store.status}</span>
+                      </button>
+                    </td>
+
+                    {/* Updated At */}
+                    <td style={{ fontSize: "11.5px", color: "#8a7b81", whiteSpace: "nowrap" }}>
+                      {store.updated_at ? new Date(store.updated_at).toLocaleDateString() : "—"}
+                    </td>
+
+                    {/* Row Actions */}
+                    <td>
+                      <div className="sl-row-actions">
+                        <button
+                          onClick={() => setPreviewStore(store)}
+                          className="sl-icon-btn"
+                          title="Preview Customer Store Profile Modal"
+                        >
+                          <Eye size={15} />
+                        </button>
+
+                        <a
+                          href={`/store/${store.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="sl-icon-btn"
+                          title="Open Public Customer Page in New Tab"
+                          style={{ color: "#2563eb", textDecoration: "none" }}
+                        >
+                          <ExternalLink size={15} />
+                        </a>
+
+                        <button
+                          onClick={() => handleOpenEdit(store)}
+                          className="sl-icon-btn"
+                          title="Edit Store Listing"
+                        >
+                          <Pencil size={15} />
+                        </button>
+
+                        <button
+                          onClick={() => setDeleteTarget(store)}
+                          className="sl-icon-btn delete"
+                          title="Delete Store Listing"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════
+          MODAL: Create / Edit Store Listing
+          ═══════════════════════════════════════════════════════════ */}
+      {isFormOpen && (
+        <div className="sl-modal-overlay">
+          <div className="sl-modal-card">
+            {/* Header */}
+            <div className="sl-modal-header">
+              <div className="sl-modal-title-row">
+                <Building2 size={20} style={{ color: "#fef08a" }} />
+                <h3 className="sl-modal-title">
+                  {editingStore ? `Edit Store: ${editingStore.store_name}` : "Create Admin-Managed Store Listing"}
+                </h3>
+              </div>
+              <button onClick={() => setIsFormOpen(false)} className="sl-modal-close-btn">
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="sl-modal-body">
+              {/* SECTION 1: Identity & Categorization */}
+              <div className="sl-form-section">
+                <div className="sl-section-heading">
+                  <span className="sl-section-title">
+                    <Sparkles size={16} style={{ color: "#d4af37" }} />
+                    1. Store Identity & Categorization
+                  </span>
+                </div>
+
+                <div className="sl-grid-2">
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      Store Name <span className="req">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Tanishq Jewellers"
+                      value={formStoreName}
+                      onChange={(e) => {
+                        setFormStoreName(e.target.value);
+                        if (!editingStore && !formSlug) {
+                          const s = e.target.value.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+                          setFormSlug(s);
+                        }
+                      }}
+                      className="sl-input"
+                    />
+                  </div>
+
+                  <div className="sl-field">
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+                      <label className="sl-label">
+                        Store URL Handle (Slug) <span className="req">*</span>
+                      </label>
+                      <span style={{ fontSize: "11px", fontWeight: 600, color: "#6b5860", backgroundColor: "#fbf2f6", padding: "2px 8px", borderRadius: "6px", border: "1px solid #ebdbe2" }}>
+                        🔗 /store/{formSlug || "your-store-handle"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <div style={{ display: "flex", flex: 1, alignItems: "center", border: "1px solid #dfcdd6", borderRadius: "10px", backgroundColor: "#ffffff", overflow: "hidden" }}>
+                        <span style={{ padding: "0 10px", fontSize: "12px", color: "#8c7882", backgroundColor: "#faf5f8", borderRight: "1px solid #ebdbe2", height: "100%", display: "flex", alignItems: "center", userSelect: "none", fontWeight: 600 }}>
+                          store/
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="e.g. tanishq-indiranagar"
+                          value={formSlug}
+                          onChange={(e) => setFormSlug(e.target.value)}
+                          className="sl-input"
+                          style={{ border: "none", borderRadius: 0, padding: "10px 12px" }}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (formStoreName) {
+                            const s = formStoreName.toLowerCase().replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-');
+                            setFormSlug(s);
+                          }
+                        }}
+                        className="sl-btn-secondary"
+                        style={{ padding: "8px 12px", fontSize: "11.5px", height: "40px" }}
+                        title="Auto-regenerate slug from Store Name"
+                      >
+                        🪄 Auto
+                      </button>
+                    </div>
+                    <span style={{ fontSize: "11px", color: "#8c7882", marginTop: "2px" }}>
+                      Public web address for this store listing. Auto-filled as you type the name, or edit manually.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="sl-field">
+                  <label className="sl-label">Short Description</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Brief description about the jewellery house, heritage, collections, hallmark purity..."
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    className="sl-textarea"
+                  />
+                </div>
+
+                <div className="sl-field">
+                  <label className="sl-label">Jewellery Categories</label>
+                  <div className="sl-cat-select-wrap">
+                    {PRESET_CATEGORIES.map((cat) => {
+                      const selected = formCategories.includes(cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => toggleCategory(cat)}
+                          className={`sl-cat-select-pill ${selected ? "selected" : ""}`}
+                          style={{
+                            backgroundColor: selected ? "#4C0F2D" : "#ffffff",
+                            borderColor: selected ? "#4C0F2D" : "#dfcdd6",
+                            color: selected ? "#ffffff" : "#4a323d",
+                            boxShadow: selected ? "0 3px 10px rgba(76, 15, 45, 0.3)" : "none",
+                          }}
+                        >
+                          {selected && <Check size={13} style={{ color: "#fef08a" }} />}
+                          <span style={{ color: selected ? "#ffffff" : "#4a323d", fontWeight: selected ? 700 : 500 }}>
+                            {cat}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ display: "flex", gap: "8px", maxWidth: "340px" }}>
+                    <input
+                      type="text"
+                      placeholder="Add custom category..."
+                      value={customCategoryInput}
+                      onChange={(e) => setCustomCategoryInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddCustomCategory();
+                        }
+                      }}
+                      className="sl-input"
+                      style={{ height: "36px" }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomCategory}
+                      className="sl-btn-secondary"
+                      style={{ padding: "6px 14px", height: "36px" }}
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: Branding & Media */}
+              <div className="sl-form-section">
+                <div className="sl-section-heading">
+                  <span className="sl-section-title">
+                    <Camera size={16} style={{ color: "#4C0F2D" }} />
+                    2. Store Branding & Photos
+                  </span>
+                </div>
+
+                <div className="sl-grid-2">
+                  <DropZone
+                    id="form-logo"
+                    preview={logoPreview}
+                    onFile={(f) => { setLogoFile(f); setLogoPreview(URL.createObjectURL(f)); setRemoveLogo(false); }}
+                    onRemove={() => { setLogoFile(null); setLogoPreview(null); setRemoveLogo(true); }}
+                    label="Store Logo"
+                    hint="Square PNG/JPG icon"
+                  />
+
+                  <DropZone
+                    id="form-cover"
+                    preview={coverPreview}
+                    onFile={(f) => { setCoverFile(f); setCoverPreview(URL.createObjectURL(f)); setRemoveCover(false); }}
+                    onRemove={() => { setCoverFile(null); setCoverPreview(null); setRemoveCover(true); }}
+                    label="Cover Banner Photo"
+                    hint="Landscape 16:9 showroom photo"
+                  />
+                </div>
+
+                {/* Photo Gallery */}
+                <div className="sl-field">
+                  <label className="sl-label">
+                    Store & Collection Photo Gallery <span className="opt">(multi-image showroom photos)</span>
+                  </label>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    id="form-gallery"
+                    style={{ display: "none" }}
+                    onChange={(e) => {
+                      if (e.target.files) {
+                        setGalleryFiles((prev) => [...prev, ...Array.from(e.target.files || [])]);
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="form-gallery"
+                    className="sl-dropzone"
+                    style={{ minHeight: "80px", cursor: "pointer" }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#4C0F2D", fontWeight: 700, fontSize: "13px" }}>
+                      <ImagePlus size={18} />
+                      <span>Upload Store & Collection Gallery Photos</span>
+                    </div>
+                  </label>
+
+                  {/* Existing gallery images */}
+                  {existingGallery.length > 0 && (
+                    <div style={{ marginTop: "10px" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#6b5860" }}>
+                        Existing Gallery ({existingGallery.length}):
+                      </span>
+                      <div className="sl-gallery-grid">
+                        {existingGallery.map((g) => (
+                          <div key={g.id} className="sl-gallery-thumb">
+                            <img src={g.image_url} alt="Gallery" />
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteGalleryImage(g.id)}
+                              className="sl-gallery-delete-btn"
+                              title="Delete photo"
+                            >
+                              <X size={11} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Queued new gallery files */}
+                  {galleryFiles.length > 0 && (
+                    <div style={{ marginTop: "10px" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#059669" }}>
+                        New Photos Queued to Upload ({galleryFiles.length}):
+                      </span>
+                      <div className="sl-gallery-grid">
+                        {galleryFiles.map((f, i) => (
+                          <div key={i} className="sl-gallery-thumb" style={{ borderColor: "#10b981" }}>
+                            <img src={URL.createObjectURL(f)} alt={f.name} />
+                            <button
+                              type="button"
+                              onClick={() => setGalleryFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                              className="sl-gallery-delete-btn"
+                              style={{ opacity: 1 }}
+                              title="Remove"
+                            >
+                              <X size={11} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION 3: Full Address & Map Link */}
+              <div className="sl-form-section">
+                <div className="sl-section-heading">
+                  <span className="sl-section-title">
+                    <MapPin size={16} style={{ color: "#4C0F2D" }} />
+                    3. Full Address, City, State, PIN & Google Maps Link
+                  </span>
+                </div>
+
+                <div className="sl-field">
+                  <label className="sl-label">
+                    Full Street Address <span className="req">*</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Shop/Showroom No., Commercial Complex, Main Road..."
+                    value={formAddress}
+                    onChange={(e) => setFormAddress(e.target.value)}
+                    className="sl-textarea"
+                  />
+                </div>
+
+                <div className="sl-grid-3">
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      City <span className="req">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Bangalore"
+                      value={formCity}
+                      onChange={(e) => setFormCity(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      State <span className="req">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Karnataka"
+                      value={formState}
+                      onChange={(e) => setFormState(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      PIN Code <span className="req">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 560038"
+                      value={formPincode}
+                      onChange={(e) => setFormPincode(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="sl-field">
+                  <label className="sl-label">
+                    Google Maps Link <span className="opt">(powers "Get Directions" customer CTA)</span>
+                  </label>
+                  <input
+                    type="url"
+                    placeholder="https://maps.google.com/?q=..."
+                    value={formMapsLink}
+                    onChange={(e) => setFormMapsLink(e.target.value)}
+                    className="sl-input"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 4: Contact & Social CTAs */}
+              <div className="sl-form-section">
+                <div className="sl-section-heading">
+                  <span className="sl-section-title">
+                    <Phone size={16} style={{ color: "#4C0F2D" }} />
+                    4. Business Phone, WhatsApp, Website & Social Handles
+                  </span>
+                </div>
+
+                <div className="sl-grid-3">
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      Business Phone <span className="req">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="+91 9876543210"
+                      value={formPhone}
+                      onChange={(e) => setFormPhone(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      WhatsApp Number <span className="opt">(with country code)</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="+91 9876543210"
+                      value={formWhatsapp}
+                      onChange={(e) => setFormWhatsapp(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+
+                  <div className="sl-field">
+                    <label className="sl-label">
+                      Website URL <span className="opt">(powers "Visit Website" CTA)</span>
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://jeweller.com"
+                      value={formWebsite}
+                      onChange={(e) => setFormWebsite(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="sl-grid-2">
+                  <div className="sl-field">
+                    <label className="sl-label">Instagram Handle / URL</label>
+                    <input
+                      type="text"
+                      placeholder="https://instagram.com/storename"
+                      value={formInstagram}
+                      onChange={(e) => setFormInstagram(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+
+                  <div className="sl-field">
+                    <label className="sl-label">Facebook Profile / Page</label>
+                    <input
+                      type="text"
+                      placeholder="https://facebook.com/storename"
+                      value={formFacebook}
+                      onChange={(e) => setFormFacebook(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 5: Operating Hours & Weekly Holiday */}
+              <div className="sl-form-section">
+                <div className="sl-section-heading">
+                  <span className="sl-section-title">
+                    <Clock size={16} style={{ color: "#4C0F2D" }} />
+                    5. Opening Hours & Weekly Holiday
+                  </span>
+                </div>
+
+                <div className="sl-grid-2">
+                  <div className="sl-field">
+                    <label className="sl-label">Opening Hours</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 10:30 AM - 08:30 PM"
+                      value={formOpeningHours}
+                      onChange={(e) => setFormOpeningHours(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+
+                  <div className="sl-field">
+                    <label className="sl-label">Weekly Holiday</label>
+                    <select
+                      value={formWeeklyHoliday}
+                      onChange={(e) => setFormWeeklyHoliday(e.target.value)}
+                      className="sl-select"
+                    >
+                      {WEEKLY_DAYS.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 6: Offers with Validity Dates & Terms (Auto-Expiry Supported) */}
+              {editingStore && (
+                <div className="sl-form-section">
+                  <div className="sl-section-heading">
+                    <span className="sl-section-title">
+                      <Tag size={16} style={{ color: "#4C0F2D" }} />
+                      6. Store Offers & Discounts (Auto-Expiry Supported)
+                    </span>
+                    <span style={{ fontSize: "11px", color: "#8a7b81" }}>
+                      Expired offers auto-hide from customer view
+                    </span>
+                  </div>
+
+                  {/* Add Offer Box */}
+                  <div style={{ backgroundColor: "#ffffff", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#4C0F2D" }}>Add New Store Offer:</span>
+                    <div className="sl-grid-2">
+                      <input
+                        type="text"
+                        placeholder="Offer Title (e.g. 20% Off Diamond Jewellery Making Charges) *"
+                        value={newOfferTitle}
+                        onChange={(e) => setNewOfferTitle(e.target.value)}
+                        className="sl-input"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Offer Short Details / Description"
+                        value={newOfferDesc}
+                        onChange={(e) => setNewOfferDesc(e.target.value)}
+                        className="sl-input"
+                      />
+                    </div>
+                    <div className="sl-grid-3">
+                      <div className="sl-field">
+                        <label className="sl-label">Start Date</label>
+                        <input
+                          type="date"
+                          value={newOfferStart}
+                          onChange={(e) => setNewOfferStart(e.target.value)}
+                          className="sl-input"
+                        />
+                      </div>
+                      <div className="sl-field">
+                        <label className="sl-label">Valid Until (Expiry)</label>
+                        <input
+                          type="date"
+                          value={newOfferEnd}
+                          onChange={(e) => setNewOfferEnd(e.target.value)}
+                          className="sl-input"
+                        />
+                      </div>
+                      <div className="sl-field">
+                        <label className="sl-label">Terms & Conditions</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. On purchases above ₹50,000"
+                          value={newOfferTerms}
+                          onChange={(e) => setNewOfferTerms(e.target.value)}
+                          className="sl-input"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={handleAddOffer}
+                        className="sl-btn-primary"
+                        style={{ padding: "8px 18px", fontSize: "12px" }}
+                      >
+                        <Plus size={14} /> Attach Offer
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Existing Offers */}
+                  {existingOffers.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
+                      {existingOffers.map((offer) => {
+                        const isExpired = offer.end_date && new Date(offer.end_date) < new Date();
+                        return (
+                          <div
+                            key={offer.id}
+                            className={`sl-form-offer-item ${isExpired ? "expired" : ""}`}
+                          >
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ fontWeight: 700, fontSize: "13px", color: "#2d161d" }}>{offer.title}</span>
+                                <span className={`sl-offer-meta-badge ${isExpired ? "expired" : "active"}`}>
+                                  {isExpired ? "EXPIRED (HIDDEN FROM CUSTOMERS)" : "ACTIVE"}
+                                </span>
+                              </div>
+                              {offer.description && (
+                                <p style={{ fontSize: "12px", color: "#6b5860", margin: "2px 0 0 0" }}>{offer.description}</p>
+                              )}
+                              <div style={{ fontSize: "11px", color: "#8a7b81", marginTop: "4px", display: "flex", gap: "12px" }}>
+                                {offer.end_date && (
+                                  <span>📅 Valid Until: <strong>{new Date(offer.end_date).toLocaleDateString()}</strong></span>
+                                )}
+                                {offer.terms && <span>📜 Terms: {offer.terms}</span>}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteOffer(offer.id)}
+                              className="sl-icon-btn delete"
+                              title="Delete offer"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* SECTION 7: Private Internal Audit & Provenance [Strictly Admin Only] */}
+              <div className="sl-form-section audit">
+                <div className="sl-section-heading">
+                  <span className="sl-section-title">
+                    <ShieldAlert size={16} style={{ color: "#b45309" }} />
+                    7. Private Internal Audit & Provenance (Admin Only)
+                  </span>
+                  <span style={{ fontSize: "10px", fontWeight: 700, backgroundColor: "#fef3c7", color: "#92400e", padding: "2px 8px", borderRadius: "4px" }}>
+                    🔒 Strictly Private — Never Shown to Customers
+                  </span>
+                </div>
+
+                <div className="sl-grid-3">
+                  <div className="sl-field">
+                    <label className="sl-label">Information Source</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Field Visit, Store Manager, Trade Fair"
+                      value={formInfoSource}
+                      onChange={(e) => setFormInfoSource(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+
+                  <div className="sl-field">
+                    <label className="sl-label">Store Contact Person & Phone</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Mr. Rajesh (Owner) 987..."
+                      value={formStoreContact}
+                      onChange={(e) => setFormStoreContact(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+
+                  <div className="sl-field">
+                    <label className="sl-label">Photo Permissions</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Direct Owner Consent, Public Domain"
+                      value={formPhotoPermissions}
+                      onChange={(e) => setFormPhotoPermissions(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="sl-field">
+                  <label className="sl-label">Internal Verification Notes & Approval</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Private team notes: verification call date, documents checked, approval notes..."
+                    value={formInternalNotes}
+                    onChange={(e) => setFormInternalNotes(e.target.value)}
+                    className="sl-textarea"
+                  />
+                </div>
+              </div>
+
+              {/* SECTION 8: Verification & Publication Status */}
+              <div className="sl-form-section" style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", userSelect: "none" }}>
+                  <input
+                    type="checkbox"
+                    checked={formIsVerified}
+                    onChange={(e) => setFormIsVerified(e.target.checked)}
+                    style={{ width: "18px", height: "18px", accentColor: "#4C0F2D" }}
+                  />
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 700, fontSize: "14px", color: "#2d161d" }}>
+                      <ShieldCheck size={17} style={{ color: "#b4860b" }} />
+                      Display "Verified Jeweller" Badge
+                    </div>
+                    <span style={{ fontSize: "11px", color: "#8a7b81" }}>
+                      Only show badge after internal verification is completed by our team.
+                    </span>
+                  </div>
+                </label>
+
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <span style={{ fontSize: "12px", fontWeight: 700, color: "#4C0F2D" }}>Listing Status:</span>
+                  <select
+                    value={formStatus}
+                    onChange={(e) => setFormStatus(e.target.value as any)}
+                    className="sl-select"
+                    style={{ width: "auto", fontWeight: 700 }}
+                  >
+                    <option value="DRAFT">DRAFT (Incomplete / Pending)</option>
+                    <option value="PUBLISHED">PUBLISHED (Live on Platform)</option>
+                    <option value="UNPUBLISHED">UNPUBLISHED (Hidden)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="sl-modal-footer">
+              <button
+                type="button"
+                onClick={() => setIsFormOpen(false)}
+                className="sl-btn-secondary"
+              >
+                <span style={{ color: "#4C0F2D", fontWeight: 600 }}>Cancel</span>
+              </button>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => handleSaveStore("DRAFT")}
+                  className="sl-btn-secondary"
+                  style={{ borderColor: "#fde68a", backgroundColor: "#fffbeb", color: "#92400e" }}
+                >
+                  <span style={{ color: "#92400e", fontWeight: 700 }}>
+                    {isSubmitting ? "Saving…" : "Save as Draft"}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => handleSaveStore("PUBLISHED")}
+                  className="sl-btn-primary"
+                  style={{ color: "#ffffff" }}
+                >
+                  {isSubmitting ? (
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "#ffffff" }}>
+                      <Loader2 size={15} className="sl-spinner" style={{ color: "#ffffff" }} /> Saving…
+                    </span>
+                  ) : (
+                    <span style={{ color: "#ffffff", fontWeight: 700 }}>Publish Listing</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          MODAL: Customer Profile Live Preview
+          ═══════════════════════════════════════════════════════════ */}
+      {previewStore && (
+        <div className="sl-modal-overlay">
+          <div className="sl-modal-card" style={{ maxWidth: "840px" }}>
+            {/* Header bar */}
+            <div className="sl-modal-header" style={{ padding: "14px 20px" }}>
+              <div className="sl-modal-title-row">
+                <Eye size={17} style={{ color: "#fef08a" }} />
+                <span style={{ fontSize: "12px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", color: "#ffffff" }}>
+                  Customer Live Profile Preview
+                </span>
+              </div>
+              <button onClick={() => setPreviewStore(null)} className="sl-modal-close-btn">
+                <X size={17} />
+              </button>
+            </div>
+
+            {/* Profile Content */}
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {/* Cover Banner */}
+              <div className="sl-preview-banner">
+                {previewStore.cover_photo_url && (
+                  <img src={previewStore.cover_photo_url} alt={previewStore.store_name} />
+                )}
+                <div className="sl-preview-banner-overlay" />
+              </div>
+
+              {/* Store Details Box */}
+              <div className="sl-preview-content">
+                {/* Hero identity row */}
+                <div className="sl-preview-hero-row">
+                  <div className="sl-preview-store-brand">
+                    <div className="sl-preview-logo-box">
+                      {previewStore.logo_url ? (
+                        <img src={previewStore.logo_url} alt={previewStore.store_name} />
+                      ) : (
+                        <Building2 size={36} style={{ color: "#b8849a" }} />
+                      )}
+                    </div>
+                    <div className="sl-preview-name-group">
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        <h2 className="sl-preview-title">{previewStore.store_name}</h2>
+                        {previewStore.is_verified && (
+                          <span className="sl-badge-toggle verified" style={{ cursor: "default" }}>
+                            <ShieldCheck size={13} style={{ color: "#b4860b" }} />
+                            <span>Verified Jeweller</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="sl-preview-loc-line">
+                        📍 {previewStore.city}, {previewStore.state} • Last updated: {new Date(previewStore.updated_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className={`sl-badge-toggle ${previewStore.status === "PUBLISHED" ? "published" : "draft"}`}>
+                    <span className={`sl-status-dot ${previewStore.status === "PUBLISHED" ? "green" : "amber"}`} />
+                    {previewStore.status}
+                  </span>
+                </div>
+
+                {/* ── 4 BIG CUSTOMER CONTACT CTAs ── */}
+                <div className="sl-cta-grid">
+                  <a
+                    href={previewStore.website || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`sl-cta-btn website ${!previewStore.website ? "disabled" : ""}`}
+                    style={!previewStore.website ? { opacity: 0.5, pointerEvents: "none" } : {}}
+                  >
+                    <Globe size={16} />
+                    <span>Visit Website</span>
+                  </a>
+
+                  <a
+                    href={
+                      previewStore.google_maps_link ||
+                      `https://maps.google.com/?q=${encodeURIComponent(`${previewStore.store_name} ${previewStore.address} ${previewStore.city}`)}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="sl-cta-btn directions"
+                  >
+                    <MapPin size={16} style={{ color: "#dc2626" }} />
+                    <span>Get Directions</span>
+                  </a>
+
+                  <a
+                    href={`tel:${previewStore.phone}`}
+                    className="sl-cta-btn call"
+                  >
+                    <Phone size={16} />
+                    <span>Call Store</span>
+                  </a>
+
+                  <a
+                    href={
+                      previewStore.whatsapp
+                        ? `https://wa.me/${previewStore.whatsapp.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(previewStore.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
+                        : `https://wa.me/${previewStore.phone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(previewStore.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="sl-cta-btn whatsapp"
+                  >
+                    <MessageSquare size={16} />
+                    <span>WhatsApp Store</span>
+                  </a>
+                </div>
+
+                {/* About & Category Tags */}
+                <div style={{ marginBottom: "20px" }}>
+                  {previewStore.short_description && (
+                    <p style={{ fontSize: "14px", lineHeight: "1.7", color: "#47303d", marginBottom: "12px" }}>
+                      {previewStore.short_description}
+                    </p>
+                  )}
+
+                  <div className="sl-cat-badge-wrap" style={{ maxWidth: "100%" }}>
+                    {previewStore.categories?.map((c, i) => (
+                      <span key={i} className="sl-cat-badge" style={{ padding: "4px 10px", fontSize: "12px" }}>
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Timings & Address Details Box */}
+                <div className="sl-grid-2" style={{ marginBottom: "22px" }}>
+                  <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
+                    <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "block", marginBottom: "4px" }}>
+                      📍 Showroom Address
+                    </span>
+                    <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 2px 0" }}>{previewStore.address}</p>
+                    <p style={{ fontSize: "12px", color: "#8a7b81", margin: 0 }}>
+                      {previewStore.city}, {previewStore.state} — {previewStore.pincode}
+                    </p>
+                  </div>
+
+                  <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
+                    <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "block", marginBottom: "4px" }}>
+                      ⏰ Opening Hours & Weekly Off
+                    </span>
+                    <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 2px 0" }}>
+                      Hours: {previewStore.opening_hours || "10:30 AM - 08:30 PM"}
+                    </p>
+                    <p style={{ fontSize: "12px", color: "#8a7b81", margin: 0 }}>
+                      Weekly Holiday: <strong style={{ color: "#4C0F2D" }}>{previewStore.weekly_holiday || "None"}</strong>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Photo Gallery Grid */}
+                {previewStore.gallery && previewStore.gallery.length > 0 && (
+                  <div style={{ marginBottom: "24px" }}>
+                    <h4 style={{ fontFamily: "var(--sl-font-heading)", fontSize: "16px", color: "#4C0F2D", margin: "0 0 10px 0" }}>
+                      Showroom & Collection Gallery
+                    </h4>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
+                      {previewStore.gallery.map((g) => (
+                        <div key={g.id} style={{ height: "90px", borderRadius: "12px", overflow: "hidden", border: "1px solid #ebdbe2" }}>
+                          <img src={g.image_url} alt="Gallery item" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Active Offers (Expired Offers are Automatically Hidden in Customer View) */}
+                {previewStore.offers && previewStore.offers.length > 0 && (
+                  <div style={{ marginBottom: "24px" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                      <h4 style={{ fontFamily: "var(--sl-font-heading)", fontSize: "16px", color: "#4C0F2D", margin: 0 }}>
+                        Active Showroom Offers
+                      </h4>
+                      <span style={{ fontSize: "11px", color: "#8a7b81" }}>
+                        Confirmed with Jeweller
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {previewStore.offers
+                        .filter((o) => !o.end_date || new Date(o.end_date) >= new Date())
+                        .map((offer) => (
+                          <div
+                            key={offer.id}
+                            style={{
+                              backgroundColor: "#ffffff",
+                              border: "1px solid #ebdbe2",
+                              borderRadius: "14px",
+                              padding: "16px",
+                              display: "flex",
+                              alignItems: "flex-start",
+                              justifyContent: "space-between",
+                              boxShadow: "0 2px 8px rgba(76, 15, 45, 0.04)"
+                            }}
+                          >
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ fontWeight: 800, fontSize: "14px", color: "#4C0F2D" }}>{offer.title}</span>
+                                <span className="sl-offer-meta-badge active">OFFER LIVE</span>
+                              </div>
+                              {offer.description && (
+                                <p style={{ fontSize: "13px", color: "#47303d", margin: "4px 0" }}>{offer.description}</p>
+                              )}
+                              <div style={{ fontSize: "11.5px", color: "#8a7b81", display: "flex", gap: "14px", marginTop: "6px" }}>
+                                {offer.end_date && <span>📅 Valid Until: <strong>{new Date(offer.end_date).toLocaleDateString()}</strong></span>}
+                                {offer.terms && <span>📜 Terms: {offer.terms}</span>}
+                              </div>
+                            </div>
+                            <Tag size={20} style={{ color: "#d4af37", flexShrink: 0 }} />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── MANDATORY LISTING DISCLAIMER ── */}
+                <div className="sl-disclaimer-card">
+                  <div className="sl-disclaimer-header">
+                    <AlertCircle size={16} />
+                    <span>Listing Disclaimer</span>
+                  </div>
+                  <p style={{ margin: 0, fontStyle: "italic" }}>
+                    “JewellersParadise is a jewellery offers discovery platform. Purchases and enquiries are handled directly by the jeweller. Please confirm offer availability and terms with the store.”
+                  </p>
+                </div>
+
+                {/* Secondary Customer Links */}
+                <div className="sl-secondary-links-row">
+                  <button
+                    type="button"
+                    onClick={() => setIsClaimModalOpen(true)}
+                    className="sl-text-link"
+                    style={{ background: "none", border: "none", padding: 0 }}
+                  >
+                    Own this store? Claim or update this listing
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsReportModalOpen(true)}
+                    className="sl-text-link muted"
+                    style={{ background: "none", border: "none", padding: 0 }}
+                  >
+                    Report incorrect details
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          MODAL: Customer "Claim or Update This Store" Dialog
+          ═══════════════════════════════════════════════════════════ */}
+      {isClaimModalOpen && previewStore && (
+        <div className="sl-modal-overlay">
+          <div className="sl-modal-card" style={{ maxWidth: "520px" }}>
+            <div className="sl-modal-header">
+              <div className="sl-modal-title-row">
+                <ShieldCheck size={18} style={{ color: "#fde68a" }} />
+                <h3 className="sl-modal-title">Claim Store Listing</h3>
+              </div>
+              <button onClick={() => setIsClaimModalOpen(false)} className="sl-modal-close-btn">
+                <X size={17} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitCustomerClaim} className="sl-modal-body">
+              <p style={{ fontSize: "12px", color: "#6b5860", margin: 0 }}>
+                Are you the official owner or representative of <strong>{previewStore.store_name}</strong>?
+                Submit your claim to manage details and publish exclusive offers directly.
+              </p>
+
+              <div className="sl-field">
+                <label className="sl-label">Your Full Name <span className="req">*</span></label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ramesh Kumar"
+                  value={claimName}
+                  onChange={(e) => setClaimName(e.target.value)}
+                  className="sl-input"
+                />
+              </div>
+
+              <div className="sl-grid-2">
+                <div className="sl-field">
+                  <label className="sl-label">Official Phone <span className="req">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="+91 9876543210"
+                    value={claimPhone}
+                    onChange={(e) => setClaimPhone(e.target.value)}
+                    className="sl-input"
+                  />
+                </div>
+
+                <div className="sl-field">
+                  <label className="sl-label">Work Email <span className="req">*</span></label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="owner@jeweller.com"
+                    value={claimEmail}
+                    onChange={(e) => setClaimEmail(e.target.value)}
+                    className="sl-input"
+                  />
+                </div>
+              </div>
+
+              <div className="sl-field">
+                <label className="sl-label">Verification Proof Type</label>
+                <select
+                  value={claimProofType}
+                  onChange={(e) => setClaimProofType(e.target.value)}
+                  className="sl-select"
+                >
+                  <option value="GST Certificate">GST Certificate</option>
+                  <option value="Shop & Establishment License">Shop & Establishment License</option>
+                  <option value="Electricity / Utility Bill">Electricity / Utility Bill</option>
+                  <option value="Visiting Card / Letterhead">Visiting Card / Letterhead</option>
+                </select>
+              </div>
+
+              <div className="sl-field">
+                <label className="sl-label">Upload Proof Document / Card <span className="opt">(optional)</span></label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => setClaimProofFile(e.target.files?.[0] || null)}
+                  className="sl-input"
+                  style={{ padding: "6px" }}
+                />
+              </div>
+
+              <div className="sl-field">
+                <label className="sl-label">Additional Verification Notes</label>
+                <textarea
+                  rows={2}
+                  placeholder="Tell our verification team about your role..."
+                  value={claimNotes}
+                  onChange={(e) => setClaimNotes(e.target.value)}
+                  className="sl-textarea"
+                />
+              </div>
+
+              <div className="sl-modal-footer" style={{ margin: "8px -24px -24px -24px" }}>
+                <button
+                  type="button"
+                  onClick={() => setIsClaimModalOpen(false)}
+                  className="sl-btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingClaim}
+                  className="sl-btn-primary"
+                >
+                  {isSubmittingClaim ? "Submitting…" : "Submit Claim Request"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          MODAL: Customer "Report Incorrect Details" Dialog
+          ═══════════════════════════════════════════════════════════ */}
+      {isReportModalOpen && previewStore && (
+        <div className="sl-modal-overlay">
+          <div className="sl-modal-card" style={{ maxWidth: "500px" }}>
+            <div className="sl-modal-header">
+              <div className="sl-modal-title-row">
+                <AlertTriangle size={18} style={{ color: "#fde68a" }} />
+                <h3 className="sl-modal-title">Report Incorrect Details</h3>
+              </div>
+              <button onClick={() => setIsReportModalOpen(false)} className="sl-modal-close-btn">
+                <X size={17} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitCustomerReport} className="sl-modal-body">
+              <p style={{ fontSize: "12px", color: "#6b5860", margin: 0 }}>
+                Spotted outdated or inaccurate information on <strong>{previewStore.store_name}</strong>?
+                Let our team know and we will verify and correct it promptly.
+              </p>
+
+              <div className="sl-field">
+                <label className="sl-label">Issue Category <span className="req">*</span></label>
+                <select
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                  className="sl-select"
+                >
+                  <option value="Wrong Phone / Contact">Wrong Phone / Contact</option>
+                  <option value="Incorrect Address or PIN">Incorrect Address or PIN</option>
+                  <option value="Store Permanently Closed">Store Permanently Closed</option>
+                  <option value="Wrong Operating Hours">Wrong Operating Hours</option>
+                  <option value="Expired or Inaccurate Offer">Expired or Inaccurate Offer</option>
+                  <option value="Other Inaccuracy">Other Inaccuracy</option>
+                </select>
+              </div>
+
+              <div className="sl-field">
+                <label className="sl-label">Details of the Correction <span className="req">*</span></label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Please describe what information is incorrect and provide the accurate details if known..."
+                  value={reportDesc}
+                  onChange={(e) => setReportDesc(e.target.value)}
+                  className="sl-textarea"
+                />
+              </div>
+
+              <div className="sl-field">
+                <label className="sl-label">Your Email <span className="opt">(optional, for confirmation)</span></label>
+                <input
+                  type="email"
+                  placeholder="you@domain.com"
+                  value={reportEmail}
+                  onChange={(e) => setReportEmail(e.target.value)}
+                  className="sl-input"
+                />
+              </div>
+
+              <div className="sl-modal-footer" style={{ margin: "8px -24px -24px -24px" }}>
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(false)}
+                  className="sl-btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingReport}
+                  className="sl-btn-primary"
+                >
+                  {isSubmittingReport ? "Submitting…" : "Submit Report"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          MODAL: Claims & Reports Management (Admin)
+          ═══════════════════════════════════════════════════════════ */}
+      {isRequestsModalOpen && (
+        <div className="sl-modal-overlay">
+          <div className="sl-modal-card" style={{ maxWidth: "760px" }}>
+            <div className="sl-modal-header">
+              <div className="sl-modal-title-row">
+                <ShieldAlert size={18} style={{ color: "#fef08a" }} />
+                <h3 className="sl-modal-title">Store Claims & Correction Reports</h3>
+              </div>
+              <button onClick={() => setIsRequestsModalOpen(false)} className="sl-modal-close-btn">
+                <X size={17} />
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="sl-req-tabs">
+              <button
+                onClick={() => setRequestsTab("claims")}
+                className={`sl-req-tab-btn ${requestsTab === "claims" ? "active" : ""}`}
+              >
+                Ownership Claims ({claims.length})
+              </button>
+              <button
+                onClick={() => setRequestsTab("reports")}
+                className={`sl-req-tab-btn ${requestsTab === "reports" ? "active" : ""}`}
+              >
+                Detail Correction Reports ({reports.length})
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="sl-modal-body" style={{ minHeight: "260px" }}>
+              {requestsTab === "claims" ? (
+                claims.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "50px 20px", color: "#8a7b81" }}>
+                    <ShieldCheck size={36} style={{ color: "#d4af37", margin: "0 auto 8px auto" }} />
+                    <p style={{ fontWeight: 600, fontSize: "14px" }}>No ownership claim requests pending.</p>
+                  </div>
+                ) : (
+                  claims.map((c) => (
+                    <div key={c.id} className="sl-req-card">
+                      <div className="sl-req-card-header">
+                        <span className="sl-req-store-name">
+                          Store: {c.store?.store_name || `Store #${c.store_id}`}
+                        </span>
+                        <span className={`sl-req-status-badge ${c.status.toLowerCase()}`}>
+                          {c.status}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#3b202c" }}>
+                        Claimant: <strong>{c.claimant_name}</strong> • Phone: <a href={`tel:${c.claimant_phone}`}>{c.claimant_phone}</a> • Email: <a href={`mailto:${c.claimant_email}`}>{c.claimant_email}</a>
+                      </div>
+                      {c.proof_type && (
+                        <div style={{ fontSize: "12px", color: "#6b5860" }}>
+                          Proof Document: <strong>{c.proof_type}</strong>
+                          {c.proof_doc_url && (
+                            <a
+                              href={c.proof_doc_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ marginLeft: "8px", color: "#2563eb", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "2px" }}
+                            >
+                              <ExternalLink size={12} /> View Document
+                            </a>
+                          )}
+                        </div>
+                      )}
+                      {c.notes && (
+                        <div style={{ fontSize: "12px", color: "#8a7b81", fontStyle: "italic", backgroundColor: "#fdfbfc", padding: "6px 10px", borderRadius: "8px" }}>
+                          "{c.notes}"
+                        </div>
+                      )}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                        <button
+                          onClick={async () => {
+                            await updateAdminStoreClaim(c.id, { status: "APPROVED", adminNotes: "Approved by Admin team" });
+                            toast.success("Claim approved!");
+                            fetchRequests();
+                          }}
+                          className="sl-btn-primary"
+                          style={{ padding: "6px 14px", fontSize: "12px", backgroundColor: "#059669" }}
+                        >
+                          Approve Claim
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await updateAdminStoreClaim(c.id, { status: "REJECTED", adminNotes: "Proof insufficient" });
+                            toast.success("Claim rejected");
+                            fetchRequests();
+                          }}
+                          className="sl-btn-secondary"
+                          style={{ padding: "6px 14px", fontSize: "12px", color: "#dc2626", borderColor: "#fecaca" }}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )
+              ) : reports.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "50px 20px", color: "#8a7b81" }}>
+                  <CheckCircle2 size={36} style={{ color: "#059669", margin: "0 auto 8px auto" }} />
+                  <p style={{ fontWeight: 600, fontSize: "14px" }}>No correction reports pending.</p>
+                </div>
+              ) : (
+                reports.map((r) => (
+                  <div key={r.id} className="sl-req-card">
+                    <div className="sl-req-card-header">
+                      <span className="sl-req-store-name">
+                        Store: {r.store?.store_name || `Store #${r.store_id}`}
+                      </span>
+                      <span className={`sl-req-status-badge ${r.status.toLowerCase()}`}>
+                        {r.report_type}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "13px", color: "#3b202c" }}>
+                      {r.description}
+                    </div>
+                    {r.reported_by_email && (
+                      <div style={{ fontSize: "11.5px", color: "#8a7b81" }}>
+                        Submitted by: {r.reported_by_email}
+                      </div>
+                    )}
+                    <div style={{ marginTop: "4px" }}>
+                      <button
+                        onClick={async () => {
+                          await updateAdminStoreReport(r.id, { status: "RESOLVED", adminNotes: "Details verified and updated" });
+                          toast.success("Report marked resolved!");
+                          fetchRequests();
+                        }}
+                        className="sl-btn-primary"
+                        style={{ padding: "6px 14px", fontSize: "12px", backgroundColor: "#059669" }}
+                      >
+                        Mark as Resolved
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirmation Modal ── */}
+      {deleteTarget && (
+        <div className="sl-modal-overlay">
+          <div className="sl-modal-card" style={{ maxWidth: "420px", padding: "24px", textAlign: "center" }}>
+            <div style={{
+              width: "52px", height: "52px", borderRadius: "16px",
+              backgroundColor: "#fee2e2", color: "#dc2626",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 14px auto"
+            }}>
+              <AlertTriangle size={28} />
+            </div>
+            <h3 style={{ fontFamily: "var(--sl-font-heading)", fontSize: "18px", color: "#2d161d", margin: "0 0 8px 0" }}>
+              Delete Store Listing?
+            </h3>
+            <p style={{ fontSize: "13px", color: "#8a7b81", margin: "0 0 20px 0", lineHeight: 1.5 }}>
+              Are you sure you want to delete <strong>"{deleteTarget.store_name}"</strong>? This will permanently remove its profile, gallery photos, and active offers.
+            </p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px" }}>
+              <button
+                disabled={isDeleting}
+                onClick={() => setDeleteTarget(null)}
+                className="sl-btn-secondary"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="sl-btn-primary"
+                style={{ backgroundColor: "#dc2626" }}
+              >
+                {isDeleting ? "Deleting…" : "Yes, Delete Listing"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

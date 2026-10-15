@@ -37,7 +37,28 @@ model offers {
   map_link               String?
   is_featured            Boolean?  @default(false)
   rejection_reason       String?
-  vendors                vendors?  @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  view_count             Int?          @default(0)
+  offer_views            offer_views[]
+  vendors                vendors?      @relation(fields: [vendor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model offer_views {
+  offer_id   Int
+  ip_address String   @db.VarChar(100)
+  view_date  DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+  offers     offers   @relation(fields: [offer_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([offer_id, ip_address, view_date])
+}
+
+model products {
+  id            Int       @id @default(autoincrement())
+  title         String    @db.VarChar(255)
+  description   String?
+  images        String[]  @default([])
+  affiliate_url String?
+  status        String?   @default("active") @db.VarChar(20)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model otp_verifications {
@@ -146,3 +167,102 @@ model Product {
   created_at    DateTime @default(now()) @db.Timestamp(6)
   updated_at    DateTime @updatedAt @db.Timestamp(6)
 }
+
+model StoreListing {
+  id                Int                  @id @default(autoincrement())
+  slug              String               @unique @db.VarChar(255)
+  store_name        String               @db.VarChar(255)
+  logo_url          String?
+  cover_photo_url   String?
+  short_description String?              @db.Text
+  categories        String[]             @default([])
+  address           String               @db.Text
+  city              String               @db.VarChar(100)
+  state             String               @db.VarChar(100)
+  pincode           String               @db.VarChar(10)
+  google_maps_link  String?              @db.Text
+  phone             String               @db.VarChar(25)
+  whatsapp          String?              @db.VarChar(25)
+  website           String?              @db.VarChar(255)
+  social_links      Json?
+  opening_hours     String?              @db.VarChar(100)
+  weekly_holiday    String?              @db.VarChar(50)
+  status            String               @default("DRAFT") @db.VarChar(20)
+  is_verified       Boolean              @default(false)
+  info_source       String?              @db.VarChar(255)
+  store_contact     String?              @db.VarChar(255)
+  photo_permissions String?              @db.VarChar(100)
+  internal_notes    String?              @db.Text
+  created_at        DateTime             @default(now()) @db.Timestamp(6)
+  updated_at        DateTime             @updatedAt @db.Timestamp(6)
+  published_at      DateTime?            @db.Timestamp(6)
+  gallery           StoreGallery[]
+  offers            StoreOffer[]
+  claim_requests    StoreClaimRequest[]
+  report_requests   StoreReportRequest[]
+
+  @@index([city, state])
+  @@index([status])
+  @@index([store_name])
+}
+
+model StoreGallery {
+  id            Int          @id @default(autoincrement())
+  store_id      Int
+  image_url     String
+  caption       String?      @db.VarChar(255)
+  display_order Int          @default(0)
+  created_at    DateTime     @default(now()) @db.Timestamp(6)
+  store         StoreListing @relation(fields: [store_id], references: [id], onDelete: Cascade)
+
+  @@index([store_id])
+}
+
+model StoreOffer {
+  id          Int          @id @default(autoincrement())
+  store_id    Int
+  title       String       @db.VarChar(255)
+  description String?      @db.Text
+  poster_url  String?
+  start_date  DateTime?    @db.Date
+  end_date    DateTime?    @db.Date
+  terms       String?      @db.Text
+  is_active   Boolean      @default(true)
+  created_at  DateTime     @default(now()) @db.Timestamp(6)
+  updated_at  DateTime     @updatedAt @db.Timestamp(6)
+  store       StoreListing @relation(fields: [store_id], references: [id], onDelete: Cascade)
+
+  @@index([store_id, end_date])
+}
+
+model StoreClaimRequest {
+  id             Int          @id @default(autoincrement())
+  store_id       Int
+  claimant_name  String       @db.VarChar(150)
+  claimant_phone String       @db.VarChar(25)
+  claimant_email String       @db.VarChar(150)
+  proof_type     String?      @db.VarChar(100)
+  proof_doc_url  String?
+  notes          String?      @db.Text
+  status         String       @default("PENDING") @db.VarChar(20)
+  admin_notes    String?      @db.Text
+  created_at     DateTime     @default(now()) @db.Timestamp(6)
+  store          StoreListing @relation(fields: [store_id], references: [id], onDelete: Cascade)
+
+  @@index([store_id, status])
+}
+
+model StoreReportRequest {
+  id                Int          @id @default(autoincrement())
+  store_id          Int
+  report_type       String       @db.VarChar(100)
+  description       String       @db.Text
+  reported_by_email String?      @db.VarChar(150)
+  status            String       @default("PENDING") @db.VarChar(20)
+  admin_notes       String?      @db.Text
+  created_at        DateTime     @default(now()) @db.Timestamp(6)
+  store             StoreListing @relation(fields: [store_id], references: [id], onDelete: Cascade)
+
+  @@index([store_id, status])
+}
+

@@ -13,6 +13,7 @@ import { InternalModule } from './internal/internal.module';
 import { PlansModule } from './plans/plans.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ProductModule } from './product/product.module';
+import { StoreModule } from './store/store.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ProductModule } from './product/product.module';
     PlansModule,
     NotificationsModule,
     ProductModule,
+    StoreModule,
     // other modules
   ],
   controllers: [AppController],

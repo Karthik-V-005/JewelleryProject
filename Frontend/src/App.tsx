@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLogin } from "./components/AdminLogin";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { ForgotPassword } from "./components/ForgotPassword";
+import { PublicStoreProfilePage } from "./components/public/PublicStoreProfilePage";
 import { Toaster } from 'sonner';
 
 import "./styles/variables.css";
@@ -9,11 +10,37 @@ import "./styles/typography.css";
 import "./styles/premium-ui.css";
 
 export default function App() {
-  type View = "login" | "forgot" | "dashboard";
+  type View = "login" | "forgot" | "dashboard" | "public-store";
   const [view, setView] = useState<View>(() => {
+    const path = window.location.pathname.toLowerCase();
+    if (path.startsWith('/store/') || path.startsWith('/stores/')) {
+      const parts = path.split('/').filter(Boolean);
+      if (parts.length >= 2) {
+        return "public-store";
+      }
+    }
     const token = sessionStorage.getItem("adminToken");
     return token ? "dashboard" : "login";
   });
+
+  // Listen for browser popstate
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.toLowerCase();
+      if (path.startsWith('/store/') || path.startsWith('/stores/')) {
+        const parts = path.split('/').filter(Boolean);
+        if (parts.length >= 2) {
+          setView("public-store");
+          return;
+        }
+      }
+      const token = sessionStorage.getItem("adminToken");
+      setView(token ? "dashboard" : "login");
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const handleLogin = () => {
     setView("dashboard");
@@ -23,6 +50,15 @@ export default function App() {
     sessionStorage.removeItem("adminToken");
     setView("login");
   };
+
+  if (view === "public-store") {
+    return (
+      <div className="min-h-screen w-full flex flex-col">
+        <Toaster position="top-right" expand={true} richColors />
+        <PublicStoreProfilePage onNavigateBack={() => setView("login")} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full flex flex-col">

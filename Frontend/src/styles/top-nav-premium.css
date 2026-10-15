@@ -21,7 +21,9 @@
     z-index: 1000;
     border-bottom: 1px solid rgba(94, 22, 53, 0.08);
     backdrop-filter: blur(10px);
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     transition: all 0.3s ease;
 }
 
@@ -72,13 +74,13 @@
 }
 
 .pj-brand-name {
-    font-family: 'Cormorant Garamond', serif;
-    /* Fluid font size: 24px on mobile, scales to 36px on desktop */
-    font-size: clamp(24px, 4vw, 30px);
+    font-family: 'Cinzel', 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+    /* Fluid font size: 24px on mobile, scales to 30px on desktop */
+    font-size: clamp(22px, 3.5vw, 28px);
     font-weight: 700;
-    line-height: 0.9;
-    letter-spacing: 0.1em;
-    background: linear-gradient(135deg, #4C0F2D 0%, #d4af37 50%, #4C0F2D 100%);
+    line-height: 1;
+    letter-spacing: 0.12em;
+    background: linear-gradient(135deg, #4C0F2D 0%, #b4860b 50%, #4C0F2D 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
     background-clip: text;
@@ -101,39 +103,53 @@
 .pj-nav-menu {
     display: flex;
     align-items: center;
-    gap: 40px;
+    gap: 36px;
     background: transparent;
 }
 
 .pj-nav-link {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 14px;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
     font-weight: 600;
-    color: #a39499;
+    color: #8c7b84;
     text-decoration: none;
     background: none;
     border: none;
+    outline: none;
     cursor: pointer;
-    padding: 10px 0;
+    padding: 10px 4px;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.12em;
     position: relative;
-    transition: all 0.3s ease;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.pj-nav-link:hover,
+.pj-nav-link:focus-visible {
+    outline: 2px solid rgba(76, 15, 45, 0.4);
+    outline-offset: 4px;
+    border-radius: 6px;
+}
+
+.pj-nav-link:hover {
+    color: var(--color-plum);
+    transform: translateY(-1px);
+}
+
 .pj-nav-link.active {
     color: var(--color-plum);
+    font-weight: 700;
 }
 
 .pj-nav-link.active::after {
     content: '';
     position: absolute;
-    bottom: 0;
+    bottom: -2px;
     left: 0;
     width: 100%;
-    height: 2px;
-    background-color: var(--color-plum);
+    height: 3px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #4C0F2D 0%, #b4860b 100%);
+    box-shadow: 0 2px 8px rgba(76, 15, 45, 0.25);
 }
 
 .pj-header-actions {
