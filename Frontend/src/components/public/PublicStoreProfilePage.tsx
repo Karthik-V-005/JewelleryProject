@@ -1,19 +1,17 @@
 import { useState, useEffect } from "react";
 import {
-  Globe, Phone, MessageSquare, MapPin, Clock, ShieldCheck,
-  AlertCircle, ShieldAlert, X, Check, Loader2, Calendar,
-  ArrowLeft, Share2, ExternalLink, Image as ImageIcon
+  Globe, Phone, MapPin, Clock, ShieldCheck,
+  AlertCircle, ShieldAlert, X, Loader2,
+  ArrowLeft, Share2, Image as ImageIcon
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   getPublicStoreProfile, submitStoreClaim, submitStoreReport,
-  StoreListing
+  getUserPanelBaseUrl, StoreListing
 } from "../../api/api";
 import { WhatsAppIcon } from "../common/WhatsAppIcon";
 import icon from "../../assets/icon.png";
 import "../../styles/public-store.css";
-
-const userPanelUrl = (import.meta as any).env?.VITE_USER_PANEL_URL || "http://localhost:5173";
 
 interface PublicStoreProfilePageProps {
   slug?: string;
@@ -21,6 +19,7 @@ interface PublicStoreProfilePageProps {
 }
 
 export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: PublicStoreProfilePageProps) {
+  const userPanelUrl = getUserPanelBaseUrl();
   // Extract slug from URL if not passed in props
   const slug = propSlug || window.location.pathname.replace(/^\/(store|stores)\//i, '').replace(/\/$/, '');
 
@@ -364,16 +363,23 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
                 <div className="pub-detail-row">
                   <span className="pub-detail-label">Timings:</span>
                   <span className="pub-detail-val">
-                    {store.opening_time && store.closing_time
-                      ? `${store.opening_time} - ${store.closing_time}`
-                      : "10:00 AM - 08:30 PM"}
+                    {store.opening_hours ||
+                      (store.opening_time && store.closing_time
+                        ? `${store.opening_time} - ${store.closing_time}`
+                        : "10:00 AM - 08:30 PM")}
                   </span>
                 </div>
                 <div className="pub-detail-row">
                   <span className="pub-detail-label">Weekly Off:</span>
-                  <span className="pub-detail-val" style={{ color: store.weekly_off && store.weekly_off !== "None" ? "#dc2626" : "#059669" }}>
-                    {store.weekly_off && store.weekly_off !== "None" ? store.weekly_off : "Open All 7 Days"}
-                  </span>
+                  {(() => {
+                    const holiday = store.weekly_holiday || store.weekly_off;
+                    const isClosed = holiday && holiday !== "None" && !holiday.toLowerCase().includes("open all");
+                    return (
+                      <span className="pub-detail-val" style={{ color: isClosed ? "#dc2626" : "#059669" }}>
+                        {isClosed ? holiday : "Open All 7 Days"}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div className="pub-detail-row">
                   <span className="pub-detail-label">Phone:</span>

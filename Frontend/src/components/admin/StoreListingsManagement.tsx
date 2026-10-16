@@ -14,15 +14,10 @@ import {
   toggleAdminStoreVerification, deleteAdminStoreGalleryImage,
   addAdminStoreOffer, deleteAdminStoreOffer, getAdminStoreClaims,
   updateAdminStoreClaim, getAdminStoreReports, updateAdminStoreReport,
-  submitStoreClaim, submitStoreReport
+  submitStoreClaim, submitStoreReport, getUserPanelStoreUrl
 } from "../../api/api";
 import { WhatsAppIcon } from "../common/WhatsAppIcon";
 import "../../styles/store-listings.css";
-
-const getUserPanelStoreUrl = (slug: string) => {
-  const baseUrl = (import.meta as any).env?.VITE_USER_PANEL_URL || "http://localhost:5173";
-  return `${baseUrl.replace(/\/$/, '')}/stores/${slug}`;
-};
 
 const PRESET_CATEGORIES = [
   "Gold", "Diamond", "Polki", "Kundan", "Bridal", "Antique",

@@ -3,15 +3,6 @@
 
 import axios from "axios";
 
-declare global {
-  interface ImportMetaEnv {
-    readonly VITE_ADMIN_API_BASE_URL?: string;
-  }
-
-  interface ImportMeta {
-    readonly env: ImportMetaEnv;
-  }
-}
 
 /* ======================================================
    Shared Types (backend response shapes)
@@ -424,6 +415,7 @@ export interface StoreOfferItem {
   store_id: number;
   title: string;
   description?: string | null;
+  discount_label?: string | null;
   poster_url?: string | null;
   start_date?: string | null;
   end_date?: string | null;
@@ -487,6 +479,9 @@ export interface StoreListing {
   social_links: Record<string, string> | null;
   opening_hours: string | null;
   weekly_holiday: string | null;
+  opening_time?: string | null;
+  closing_time?: string | null;
+  weekly_off?: string | null;
   status: "DRAFT" | "PUBLISHED" | "UNPUBLISHED" | string;
   is_verified: boolean;
   info_source?: string | null;
@@ -600,6 +595,51 @@ export const submitStoreReport = (
     reportedByEmail?: string;
   },
 ) => API.post(`/stores/${storeId}/report`, data);
+
+/* ======================================================
+   PUBLIC / USER PANEL URL HELPERS
+   Intelligently resolves User Panel URLs:
+   - Real-time / Production: https://www.jewellersparadise.com
+   - Local Dev: Uses VITE_USER_PANEL_URL or http://localhost:5173
+   - Guard against localhost URLs appearing in production builds/deployments
+   ====================================================== */
+
+export const getUserPanelBaseUrl = (): string => {
+  const isBrowser = typeof window !== "undefined";
+  const hostname = isBrowser ? window.location.hostname.toLowerCase() : "";
+  const isLocalHost =
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.startsWith("192.168.");
+
+  const envUrl = (import.meta.env.VITE_USER_PANEL_URL || "").trim();
+
+  // 1. If running on a live/production domain (not localhost), NEVER open localhost in new tabs!
+  if (isBrowser && !isLocalHost) {
+    if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+      return envUrl.replace(/\/$/, "");
+    }
+    return "https://www.jewellersparadise.com";
+  }
+
+  // 2. If running locally and VITE_USER_PANEL_URL is explicitly configured, use it
+  if (envUrl) {
+    return envUrl.replace(/\/$/, "");
+  }
+
+  // 3. In Vite production build mode, default to live website
+  if (import.meta.env.PROD) {
+    return "https://www.jewellersparadise.com";
+  }
+
+  // 4. Default for local development
+  return "http://localhost:5173";
+};
+
+export const getUserPanelStoreUrl = (slug: string): string => {
+  const base = getUserPanelBaseUrl();
+  return `${base}/stores/${encodeURIComponent(slug)}`;
+};
 
 /* ======================================================
    EXPORT AXIOS INSTANCE (optional)
