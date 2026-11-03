@@ -343,13 +343,13 @@
 .sl-filter-card {
   background-color: #ffffff;
   border-radius: 16px;
-  border: 1px solid #ebdbe2;
+  border: 1px solid rgba(76, 15, 45, 0.07);
   padding: 16px 20px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
   gap: 14px;
-  box-shadow: 0 3px 12px rgba(76, 15, 45, 0.03);
+  box-shadow: 0 2px 12px rgba(76, 15, 45, 0.03);
 }
 
 @media (min-width: 1024px) {
@@ -524,9 +524,9 @@
    -------------------------------------------------------------------------- */
 .sl-table-container {
   background-color: #ffffff;
-  border-radius: 18px;
-  border: 1px solid #ebdbe2;
-  box-shadow: 0 4px 18px rgba(76, 15, 45, 0.04);
+  border-radius: 16px;
+  border: 1px solid rgba(76, 15, 45, 0.07);
+  box-shadow: 0 4px 20px -2px rgba(76, 15, 45, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
   overflow: hidden;
 }
 
@@ -614,43 +614,38 @@
 
 .sl-table th:first-child,
 .sl-table td:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 2;
   background-color: #ffffff;
-  box-shadow: 3px 0 8px -3px rgba(76, 15, 45, 0.08);
 }
 
 .sl-table thead th:first-child {
-  background-color: #faf5f8;
-  z-index: 3;
+  background-color: #fafbfc;
 }
 
 .sl-table tbody tr:hover td:first-child {
-  background-color: #fef9fb;
+  background-color: #fdfafc;
 }
 
 .sl-table thead tr {
-  background-color: #faf5f8;
+  background-color: #fafbfc;
   border-bottom: 1px solid #ebdbe2;
 }
 
 .sl-table th {
-  padding: 13px 14px;
+  padding: 14px 18px;
   font-family: var(--sl-font-body);
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #6e5863;
+  letter-spacing: 0.08em;
+  color: #735e69;
   white-space: nowrap;
 }
 
 .sl-table td {
-  padding: 13px 14px;
+  padding: 15px 18px;
   font-family: var(--sl-font-body);
   font-size: 13px;
-  border-bottom: 1px solid #f3e8ee;
+  border-bottom: 1px solid #f6ecf1;
   vertical-align: middle;
 }
 
