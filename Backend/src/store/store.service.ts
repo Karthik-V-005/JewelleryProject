@@ -66,6 +66,33 @@ export class StoreService {
     return null;
   }
 
+  private parseStringArray(input: any): string[] {
+    if (!input) return [];
+    if (Array.isArray(input)) return input.map((i) => String(i).trim()).filter(Boolean);
+    if (typeof input === 'string') {
+      try {
+        const parsed = JSON.parse(input);
+        if (Array.isArray(parsed)) return parsed.map((i) => String(i).trim()).filter(Boolean);
+      } catch {
+        return input.split(',').map((s) => s.trim()).filter(Boolean);
+      }
+    }
+    return [];
+  }
+
+  private parseJsonObject(input: any): any {
+    if (!input) return null;
+    if (typeof input === 'object') return input;
+    if (typeof input === 'string') {
+      try {
+        return JSON.parse(input);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
   /* ─────────────────────────────────────────────────────────────
      ADMIN METHODS
   ───────────────────────────────────────────────────────────── */
@@ -105,6 +132,25 @@ export class StoreService {
       dto.isVerified === true || dto.isVerified === 'true';
     const status = (dto.status || 'DRAFT').toUpperCase();
 
+    const country = dto.country?.trim() || 'India';
+    const emails = this.parseStringArray(dto.emails);
+    const email = dto.email?.trim() || (emails.length > 0 ? emails[0] : null);
+    if (email && !emails.includes(email)) {
+      emails.unshift(email);
+    }
+
+    const phones = this.parseStringArray(dto.phones);
+    const phone = dto.phone?.trim() || (phones.length > 0 ? phones[0] : '');
+    if (phone && !phones.includes(phone)) {
+      phones.unshift(phone);
+    }
+
+    const daywiseHours = this.parseJsonObject(dto.daywiseHours);
+    const weeklyHolidays = this.parseStringArray(dto.weeklyHolidays);
+    const weeklyHoliday =
+      dto.weeklyHoliday ||
+      (weeklyHolidays.length > 0 ? weeklyHolidays.join(', ') : 'None');
+
     const store = await this.prisma.storeListing.create({
       data: {
         slug,
@@ -116,14 +162,20 @@ export class StoreService {
         address: dto.address,
         city: dto.city,
         state: dto.state,
+        country,
         pincode: dto.pincode,
         google_maps_link: dto.googleMapsLink || null,
-        phone: dto.phone,
+        email,
+        emails,
+        phone,
+        phones,
         whatsapp: dto.whatsapp || null,
         website: dto.website || null,
         social_links: socialLinks,
         opening_hours: dto.openingHours || null,
-        weekly_holiday: dto.weeklyHoliday || null,
+        daywise_hours: daywiseHours,
+        weekly_holiday: weeklyHoliday,
+        weekly_holidays: weeklyHolidays,
         status,
         is_verified: isVerified,
         info_source: dto.infoSource || null,
@@ -278,6 +330,51 @@ export class StoreService {
         ? this.parseSocialLinks(dto.socialLinks)
         : current.social_links;
 
+    let emails = current.emails || [];
+    let email = current.email;
+    if (dto.emails !== undefined) {
+      emails = this.parseStringArray(dto.emails);
+    }
+    if (dto.email !== undefined) {
+      email = dto.email ? dto.email.trim() : null;
+      if (email && !emails.includes(email)) {
+        emails = [email, ...emails];
+      }
+    } else if (emails.length > 0 && !email) {
+      email = emails[0];
+    }
+
+    let phones = current.phones || [];
+    let phone = current.phone;
+    if (dto.phones !== undefined) {
+      phones = this.parseStringArray(dto.phones);
+    }
+    if (dto.phone !== undefined) {
+      phone = dto.phone.trim();
+      if (phone && !phones.includes(phone)) {
+        phones = [phone, ...phones];
+      }
+    } else if (phones.length > 0 && !phone) {
+      phone = phones[0];
+    }
+
+    let weeklyHolidays = current.weekly_holidays || [];
+    let weeklyHoliday = current.weekly_holiday;
+    if (dto.weeklyHolidays !== undefined) {
+      weeklyHolidays = this.parseStringArray(dto.weeklyHolidays);
+      weeklyHoliday = weeklyHolidays.length > 0 ? weeklyHolidays.join(', ') : 'None';
+    } else if (dto.weeklyHoliday !== undefined) {
+      weeklyHoliday = dto.weeklyHoliday || 'None';
+    }
+
+    const daywiseHours =
+      dto.daywiseHours !== undefined
+        ? this.parseJsonObject(dto.daywiseHours)
+        : current.daywise_hours;
+
+    const country =
+      dto.country !== undefined ? dto.country.trim() || 'India' : current.country || 'India';
+
     const isVerified =
       dto.isVerified !== undefined
         ? dto.isVerified === true || dto.isVerified === 'true'
@@ -306,11 +403,15 @@ export class StoreService {
         ...(dto.address && { address: dto.address }),
         ...(dto.city && { city: dto.city }),
         ...(dto.state && { state: dto.state }),
+        country,
         ...(dto.pincode && { pincode: dto.pincode }),
         ...(dto.googleMapsLink !== undefined && {
           google_maps_link: dto.googleMapsLink || null,
         }),
-        ...(dto.phone && { phone: dto.phone }),
+        email,
+        emails,
+        phone,
+        phones,
         ...(dto.whatsapp !== undefined && {
           whatsapp: dto.whatsapp || null,
         }),
@@ -321,9 +422,9 @@ export class StoreService {
         ...(dto.openingHours !== undefined && {
           opening_hours: dto.openingHours || null,
         }),
-        ...(dto.weeklyHoliday !== undefined && {
-          weekly_holiday: dto.weeklyHoliday || null,
-        }),
+        daywise_hours: daywiseHours,
+        weekly_holiday: weeklyHoliday,
+        weekly_holidays: weeklyHolidays,
         status,
         is_verified: isVerified,
         ...(dto.infoSource !== undefined && {
@@ -540,15 +641,22 @@ export class StoreService {
           short_description: true,
           categories: true,
           address: true,
+          country: true,
           city: true,
           state: true,
           pincode: true,
           google_maps_link: true,
           phone: true,
+          phones: true,
+          email: true,
+          emails: true,
           whatsapp: true,
           website: true,
+          social_links: true,
           opening_hours: true,
           weekly_holiday: true,
+          weekly_holidays: true,
+          daywise_hours: true,
           is_verified: true,
           status: true,
           updated_at: true,

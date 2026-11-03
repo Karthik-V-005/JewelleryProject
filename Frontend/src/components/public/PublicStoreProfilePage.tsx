@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import {
   Globe, Phone, MapPin, Clock, ShieldCheck,
   AlertCircle, ShieldAlert, X, Loader2,
-  ArrowLeft, Share2, Image as ImageIcon
+  ArrowLeft, Share2, Image as ImageIcon, Mail, Instagram, Facebook, Youtube, Twitter, Send
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -12,6 +12,18 @@ import {
 import { WhatsAppIcon } from "../common/WhatsAppIcon";
 import icon from "../../assets/icon.png";
 import "../../styles/public-store.css";
+
+
+const getSocialIconPub = (platform: string) => {
+  const p = platform.toLowerCase();
+  if (p.includes("instagram")) return <Instagram size={15} style={{ color: "#c13584" }} />;
+  if (p.includes("facebook")) return <Facebook size={15} style={{ color: "#1877f2" }} />;
+  if (p.includes("youtube")) return <Youtube size={15} style={{ color: "#dc2626" }} />;
+  if (p.includes("twitter") || p === "x") return <Twitter size={15} style={{ color: "#0f172a" }} />;
+  if (p.includes("telegram")) return <Send size={15} style={{ color: "#0284c7" }} />;
+  if (p.includes("whatsapp")) return <WhatsAppIcon size={15} />;
+  return <Globe size={15} style={{ color: "#4C0F2D" }} />;
+};
 
 /* Helper: Format date as [DATE/MONTH/YEAR] (DD/MM/YYYY) */
 const formatDateDMY = (dateInput: string | Date | null | undefined): string => {
@@ -299,7 +311,7 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
 
                 <p className="pub-loc-text">
                   <MapPin size={15} style={{ color: "#dc2626" }} />
-                  <strong>{store.address}</strong> • {store.city}, {store.state} {store.pincode ? `- ${store.pincode}` : ""}
+                  <strong>{store.address}</strong> • {store.city}, {store.state}, {store.country || "India"} {store.pincode ? `- ${store.pincode}` : ""}
                 </p>
 
                 {store.categories && store.categories.length > 0 && (
@@ -317,7 +329,7 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
             </div>
           </div>
 
-          {/* ── 4 BIG CUSTOMER CONTACT CTAs ── */}
+          {/* ── CUSTOMER CONTACT CTAs (Website, Directions, Call, WhatsApp, Email) ── */}
           <div className="pub-cta-grid">
             <a
               href={store.website || "#"}
@@ -364,20 +376,69 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
               <WhatsAppIcon size={18} style={{ color: "#ffffff" }} />
               <span style={{ color: "#ffffff" }}>WhatsApp Store</span>
             </a>
+
+            {(store.email || (store.emails && store.emails.length > 0)) && (
+              <a
+                href={`mailto:${store.email || store.emails?.[0]}`}
+                className="pub-cta-btn call"
+                style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)" }}
+              >
+                <Mail size={18} style={{ color: "#ffffff" }} />
+                <span style={{ color: "#ffffff" }}>Email Store</span>
+              </a>
+            )}
           </div>
 
-          {/* ── Info Grid: About + Hours ── */}
-          <div className="pub-info-grid">
+          {/* ── Info Grid: About, Operating Hours & Contact/Social Details ── */}
+          <div className="pub-info-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
             <div className="pub-section-card">
               <h3 className="pub-section-title">About the Jeweller</h3>
               <p className="pub-desc-p">
                 {store.short_description || "Welcome to our store on Jewellers Paradise. Visit us to explore hallmark jewellery, latest designs, and certified collections."}
               </p>
+
+              {/* Social Channels in About card if available */}
+              {store.social_links && Object.keys(store.social_links).length > 0 && (
+                <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid #ebdbe2" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#8a7b82", textTransform: "uppercase", display: "block", marginBottom: "8px" }}>
+                    Official Social Profiles
+                  </span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                    {Object.entries(store.social_links).map(([platform, url]) => {
+                      if (!url) return null;
+                      return (
+                        <a
+                          key={platform}
+                          href={url.startsWith("http") ? url : `https://${url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            padding: "5px 10px",
+                            borderRadius: "8px",
+                            backgroundColor: "#fdfbfc",
+                            border: "1px solid #ebdbe2",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            color: "#4C0F2D",
+                            textDecoration: "none"
+                          }}
+                        >
+                          {getSocialIconPub(platform)}
+                          <span style={{ textTransform: "capitalize" }}>{platform.replace(/_/g, ' ')}</span>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="pub-section-card">
               <h3 className="pub-section-title">
-                <Clock size={17} style={{ color: "#b4860b" }} /> Store Hours
+                <Clock size={17} style={{ color: "#b4860b" }} /> Store Hours & Weekly Off
               </h3>
               <div className="pub-details-list">
                 <div className="pub-detail-row">
@@ -392,23 +453,75 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
                 <div className="pub-detail-row">
                   <span className="pub-detail-label">Weekly Off:</span>
                   {(() => {
-                    const holiday = store.weekly_holiday || store.weekly_off;
-                    const isClosed = holiday && holiday !== "None" && !holiday.toLowerCase().includes("open all");
+                    const holidays = (store.weekly_holidays && store.weekly_holidays.length > 0)
+                      ? store.weekly_holidays.join(", ")
+                      : (store.weekly_holiday || store.weekly_off);
+                    const isClosed = holidays && holidays !== "None" && !holidays.toLowerCase().includes("open all");
                     return (
-                      <span className="pub-detail-val" style={{ color: isClosed ? "#dc2626" : "#059669" }}>
-                        {isClosed ? holiday : "Open All 7 Days"}
+                      <span className="pub-detail-val" style={{ color: isClosed ? "#dc2626" : "#059669", fontWeight: 700 }}>
+                        {isClosed ? holidays : "Open All 7 Days"}
                       </span>
                     );
                   })()}
                 </div>
-                <div className="pub-detail-row">
+
+                {/* Daywise breakdown if present */}
+                {store.daywise_hours && (
+                  <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px dashed #ebdbe2" }}>
+                    <span style={{ fontSize: "11px", fontWeight: 700, color: "#8a7b82", textTransform: "uppercase", display: "block", marginBottom: "6px" }}>
+                      Daily Schedule Breakdown:
+                    </span>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "4px" }}>
+                      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => {
+                        const s = (store.daywise_hours as any)?.[day];
+                        if (!s) return null;
+                        return (
+                          <div
+                            key={day}
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              fontSize: "11px",
+                              padding: "3px 6px",
+                              borderRadius: "4px",
+                              backgroundColor: s.is_closed ? "#fee2e2" : "#f0fdf4",
+                              color: s.is_closed ? "#991b1b" : "#166534"
+                            }}
+                          >
+                            <strong>{day.slice(0, 3)}:</strong>
+                            <span>{s.is_closed ? "Closed" : `${s.open} - ${s.close}`}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact numbers */}
+                <div className="pub-detail-row" style={{ marginTop: "8px" }}>
                   <span className="pub-detail-label">Phone:</span>
-                  <span className="pub-detail-val">
-                    <a href={`tel:${store.phone}`} style={{ color: "#4C0F2D", textDecoration: "none" }}>
-                      {store.phone}
-                    </a>
-                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-end" }}>
+                    {(store.phones && store.phones.length > 0 ? store.phones : [store.phone]).map((ph, idx) => (
+                      <a key={idx} href={`tel:${ph.replace(/[^0-9+]/g, '')}`} style={{ color: "#4C0F2D", textDecoration: "none", fontWeight: 600 }}>
+                        {ph}
+                      </a>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Email addresses */}
+                {(store.email || (store.emails && store.emails.length > 0)) && (
+                  <div className="pub-detail-row">
+                    <span className="pub-detail-label">Email:</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-end" }}>
+                      {(store.emails && store.emails.length > 0 ? store.emails : [store.email!]).map((em, idx) => (
+                        <a key={idx} href={`mailto:${em}`} style={{ color: "#1e3a8a", textDecoration: "none", fontWeight: 600 }}>
+                          {em}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

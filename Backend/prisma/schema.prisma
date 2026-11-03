@@ -179,14 +179,20 @@ model StoreListing {
   address           String               @db.Text
   city              String               @db.VarChar(100)
   state             String               @db.VarChar(100)
+  country           String               @default("India") @db.VarChar(100)
   pincode           String               @db.VarChar(10)
   google_maps_link  String?              @db.Text
+  email             String?              @db.VarChar(255)
+  emails            String[]             @default([])
   phone             String               @db.VarChar(25)
+  phones            String[]             @default([])
   whatsapp          String?              @db.VarChar(25)
   website           String?              @db.VarChar(255)
   social_links      Json?
-  opening_hours     String?              @db.VarChar(100)
-  weekly_holiday    String?              @db.VarChar(50)
+  opening_hours     String?              @db.VarChar(255)
+  daywise_hours     Json?
+  weekly_holiday    String?              @db.VarChar(100)
+  weekly_holidays   String[]             @default([])
   status            String               @default("DRAFT") @db.VarChar(20)
   is_verified       Boolean              @default(false)
   info_source       String?              @db.VarChar(255)

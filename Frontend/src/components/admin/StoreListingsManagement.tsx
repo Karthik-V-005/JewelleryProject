@@ -4,7 +4,7 @@ import {
   Loader2, RefreshCw, X, Globe, Phone, MessageSquare, MapPin,
   Clock, ShieldCheck, ShieldAlert, ImagePlus, Camera,
   Building2, Tag, AlertCircle, Sparkles, Check, ExternalLink,
-  RotateCcw
+  RotateCcw, Mail, Share2, Calendar, ChevronDown, ChevronUp, Sliders, Instagram, Facebook, Youtube, Twitter, Send
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,6 +28,52 @@ const WEEKLY_DAYS = [
   "None", "Sunday", "Monday", "Tuesday", "Wednesday",
   "Thursday", "Friday", "Saturday"
 ];
+const SOCIAL_PLATFORMS = [
+  { id: "instagram", name: "Instagram", placeholder: "https://instagram.com/storename" },
+  { id: "facebook", name: "Facebook", placeholder: "https://facebook.com/storename" },
+  { id: "youtube", name: "YouTube", placeholder: "https://youtube.com/@storename" },
+  { id: "twitter", name: "X (Twitter)", placeholder: "https://x.com/storename" },
+  { id: "pinterest", name: "Pinterest", placeholder: "https://pinterest.com/storename" },
+  { id: "linkedin", name: "LinkedIn", placeholder: "https://linkedin.com/company/storename" },
+  { id: "telegram", name: "Telegram", placeholder: "https://t.me/storename" },
+  { id: "whatsapp_channel", name: "WhatsApp Channel", placeholder: "https://whatsapp.com/channel/..." },
+  { id: "threads", name: "Threads", placeholder: "https://threads.net/@storename" },
+  { id: "snapchat", name: "Snapchat", placeholder: "https://snapchat.com/add/storename" },
+  { id: "other", name: "Other Profile", placeholder: "https://..." }
+];
+
+const DAYS_OF_WEEK = [
+  "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+];
+
+interface DaySchedule {
+  open: string;
+  close: string;
+  is_closed: boolean;
+}
+
+const DEFAULT_DAYWISE_HOURS: Record<string, DaySchedule> = {
+  Monday: { open: "10:00 AM", close: "08:30 PM", is_closed: false },
+  Tuesday: { open: "10:00 AM", close: "08:30 PM", is_closed: false },
+  Wednesday: { open: "10:00 AM", close: "08:30 PM", is_closed: false },
+  Thursday: { open: "10:00 AM", close: "08:30 PM", is_closed: false },
+  Friday: { open: "10:00 AM", close: "08:30 PM", is_closed: false },
+  Saturday: { open: "10:00 AM", close: "08:30 PM", is_closed: false },
+  Sunday: { open: "10:00 AM", close: "08:30 PM", is_closed: true }
+};
+
+
+
+const getSocialIconPreview = (platform: string) => {
+  const p = platform.toLowerCase();
+  if (p.includes("instagram")) return <Instagram size={14} style={{ color: "#c13584" }} />;
+  if (p.includes("facebook")) return <Facebook size={14} style={{ color: "#1877f2" }} />;
+  if (p.includes("youtube")) return <Youtube size={14} style={{ color: "#dc2626" }} />;
+  if (p.includes("twitter") || p === "x") return <Twitter size={14} style={{ color: "#0f172a" }} />;
+  if (p.includes("telegram")) return <Send size={14} style={{ color: "#0284c7" }} />;
+  if (p.includes("whatsapp")) return <WhatsAppIcon size={14} />;
+  return <Globe size={14} style={{ color: "#4C0F2D" }} />;
+};
 
 /* Helper: Format date as [DATE/MONTH/YEAR] (DD/MM/YYYY) */
 const formatDateDMY = (dateInput: string | Date | null | undefined): string => {
@@ -150,17 +196,130 @@ export function StoreListingsManagement() {
   const [formAddress, setFormAddress] = useState("");
   const [formCity, setFormCity] = useState("");
   const [formState, setFormState] = useState("");
+  const [formCountry, setFormCountry] = useState("India");
   const [formPincode, setFormPincode] = useState("");
   const [formMapsLink, setFormMapsLink] = useState("");
 
   const [formPhone, setFormPhone] = useState("");
+  const [formPhones, setFormPhones] = useState<string[]>([""]);
+  const [formEmails, setFormEmails] = useState<string[]>([""]);
   const [formWhatsapp, setFormWhatsapp] = useState("");
   const [formWebsite, setFormWebsite] = useState("");
-  const [formInstagram, setFormInstagram] = useState("");
-  const [formFacebook, setFormFacebook] = useState("");
+  const [formSocialLinks, setFormSocialLinks] = useState<Array<{ platform: string; url: string }>>([
+    { platform: "instagram", url: "" },
+    { platform: "facebook", url: "" }
+  ]);
 
-  const [formOpeningHours, setFormOpeningHours] = useState("");
+  const [formOpeningHours, setFormOpeningHours] = useState("10:00 AM - 08:30 PM");
   const [formWeeklyHoliday, setFormWeeklyHoliday] = useState("None");
+  const [formWeeklyHolidays, setFormWeeklyHolidays] = useState<string[]>(["Sunday"]);
+  const [formDaywiseHours, setFormDaywiseHours] = useState<Record<string, DaySchedule>>(DEFAULT_DAYWISE_HOURS);
+  const [isDaywiseCustom, setIsDaywiseCustom] = useState(false);
+
+  // Dynamic Multi-Field Helpers
+  const addPhoneField = () => setFormPhones((prev) => [...prev, ""]);
+  const updatePhoneField = (index: number, val: string) => {
+    setFormPhones((prev) => prev.map((p, i) => (i === index ? val : p)));
+    if (index === 0) setFormPhone(val);
+  };
+  const removePhoneField = (index: number) => {
+    setFormPhones((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      const res = updated.length > 0 ? updated : [""];
+      setFormPhone(res[0]);
+      return res;
+    });
+  };
+
+  const addEmailField = () => setFormEmails((prev) => [...prev, ""]);
+  const updateEmailField = (index: number, val: string) =>
+    setFormEmails((prev) => prev.map((e, i) => (i === index ? val : e)));
+  const removeEmailField = (index: number) =>
+    setFormEmails((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      return updated.length > 0 ? updated : [""];
+    });
+
+  const addSocialField = () =>
+    setFormSocialLinks((prev) => [...prev, { platform: "youtube", url: "" }]);
+  const updateSocialPlatform = (index: number, platform: string) =>
+    setFormSocialLinks((prev) => prev.map((s, i) => (i === index ? { ...s, platform } : s)));
+  const updateSocialUrl = (index: number, url: string) =>
+    setFormSocialLinks((prev) => prev.map((s, i) => (i === index ? { ...s, url } : s)));
+  const removeSocialField = (index: number) =>
+    setFormSocialLinks((prev) => {
+      const updated = prev.filter((_, i) => i !== index);
+      return updated.length > 0 ? updated : [{ platform: "instagram", url: "" }];
+    });
+
+  const toggleWeeklyHoliday = (day: string) => {
+    setFormWeeklyHolidays((prev) => {
+      const exists = prev.includes(day);
+      const next = exists ? prev.filter((d) => d !== day) : [...prev, day];
+      setFormWeeklyHoliday(next.length > 0 ? next.join(", ") : "None");
+      // Sync daywise hours closed state
+      setFormDaywiseHours((currentHours) => {
+        const copy = { ...currentHours };
+        if (copy[day]) {
+          copy[day] = { ...copy[day], is_closed: !exists };
+        }
+        return copy;
+      });
+      return next;
+    });
+  };
+
+  const clearWeeklyHolidays = () => {
+    setFormWeeklyHolidays([]);
+    setFormWeeklyHoliday("None");
+    setFormDaywiseHours((currentHours) => {
+      const copy = { ...currentHours };
+      Object.keys(copy).forEach((day) => {
+        copy[day] = { ...copy[day], is_closed: false };
+      });
+      return copy;
+    });
+  };
+
+  const updateDaySchedule = (day: string, field: "open" | "close" | "is_closed", value: any) => {
+    setFormDaywiseHours((prev) => {
+      const updated = {
+        ...prev,
+        [day]: {
+          ...(prev[day] || { open: "10:00 AM", close: "08:30 PM", is_closed: false }),
+          [field]: value
+        }
+      };
+      // Auto-sync weekly holidays if is_closed changed
+      if (field === "is_closed") {
+        setFormWeeklyHolidays((holidays) => {
+          if (value && !holidays.includes(day)) return [...holidays, day];
+          if (!value && holidays.includes(day)) return holidays.filter((d) => d !== day);
+          return holidays;
+        });
+      }
+      return updated;
+    });
+  };
+
+  const applyStandardHoursToAllOpen = () => {
+    const parts = formOpeningHours.split("-");
+    const openTime = parts[0]?.trim() || "10:00 AM";
+    const closeTime = parts[1]?.trim() || "08:30 PM";
+    setFormDaywiseHours((prev) => {
+      const updated: Record<string, DaySchedule> = {};
+      DAYS_OF_WEEK.forEach((day) => {
+        const isClosed = formWeeklyHolidays.includes(day);
+        updated[day] = {
+          open: openTime,
+          close: closeTime,
+          is_closed: isClosed
+        };
+      });
+      return updated;
+    });
+    toast.success("Standard hours applied to all open days!");
+  };
 
   const [formStatus, setFormStatus] = useState<"DRAFT" | "PUBLISHED" | "UNPUBLISHED">("DRAFT");
   const [formIsVerified, setFormIsVerified] = useState(false);
@@ -343,15 +502,23 @@ export function StoreListingsManagement() {
     setFormAddress("");
     setFormCity("");
     setFormState("");
+    setFormCountry("India");
     setFormPincode("");
     setFormMapsLink("");
     setFormPhone("");
+    setFormPhones([""]);
+    setFormEmails([""]);
     setFormWhatsapp("");
     setFormWebsite("");
-    setFormInstagram("");
-    setFormFacebook("");
-    setFormOpeningHours("10:30 AM - 08:30 PM");
+    setFormSocialLinks([
+      { platform: "instagram", url: "" },
+      { platform: "facebook", url: "" }
+    ]);
+    setFormOpeningHours("10:00 AM - 08:30 PM");
     setFormWeeklyHoliday("None");
+    setFormWeeklyHolidays(["Sunday"]);
+    setFormDaywiseHours(DEFAULT_DAYWISE_HOURS);
+    setIsDaywiseCustom(false);
     setFormStatus("DRAFT");
     setFormIsVerified(false);
     setFormInfoSource("");
@@ -383,15 +550,70 @@ export function StoreListingsManagement() {
       setFormAddress(s.address || "");
       setFormCity(s.city || "");
       setFormState(s.state || "");
+      setFormCountry(s.country || "India");
       setFormPincode(s.pincode || "");
       setFormMapsLink(s.google_maps_link || "");
       setFormPhone(s.phone || "");
+
+      // Multiple phones
+      if (s.phones && Array.isArray(s.phones) && s.phones.length > 0) {
+        setFormPhones(s.phones);
+      } else if (s.phone) {
+        setFormPhones([s.phone]);
+      } else {
+        setFormPhones([""]);
+      }
+
+      // Multiple emails
+      if (s.emails && Array.isArray(s.emails) && s.emails.length > 0) {
+        setFormEmails(s.emails);
+      } else if (s.email) {
+        setFormEmails([s.email]);
+      } else {
+        setFormEmails([""]);
+      }
+
       setFormWhatsapp(s.whatsapp || "");
       setFormWebsite(s.website || "");
-      setFormInstagram(s.social_links?.instagram || "");
-      setFormFacebook(s.social_links?.facebook || "");
-      setFormOpeningHours(s.opening_hours || "");
-      setFormWeeklyHoliday(s.weekly_holiday || "None");
+
+      // Multiple social links
+      if (s.social_links && typeof s.social_links === "object" && Object.keys(s.social_links).length > 0) {
+        setFormSocialLinks(
+          Object.entries(s.social_links).map(([k, v]) => ({
+            platform: k,
+            url: String(v || "")
+          }))
+        );
+      } else {
+        setFormSocialLinks([
+          { platform: "instagram", url: "" },
+          { platform: "facebook", url: "" }
+        ]);
+      }
+
+      setFormOpeningHours(s.opening_hours || "10:00 AM - 08:30 PM");
+
+      // Multiple weekly holidays
+      if (s.weekly_holidays && Array.isArray(s.weekly_holidays) && s.weekly_holidays.length > 0) {
+        setFormWeeklyHolidays(s.weekly_holidays);
+        setFormWeeklyHoliday(s.weekly_holidays.join(", "));
+      } else if (s.weekly_holiday && s.weekly_holiday !== "None") {
+        const parsed = s.weekly_holiday.split(",").map((x) => x.trim()).filter(Boolean);
+        setFormWeeklyHolidays(parsed);
+        setFormWeeklyHoliday(s.weekly_holiday);
+      } else {
+        setFormWeeklyHolidays([]);
+        setFormWeeklyHoliday("None");
+      }
+
+      // Daywise hours
+      if (s.daywise_hours && typeof s.daywise_hours === "object" && Object.keys(s.daywise_hours).length > 0) {
+        setFormDaywiseHours({ ...DEFAULT_DAYWISE_HOURS, ...s.daywise_hours });
+        setIsDaywiseCustom(true);
+      } else {
+        setFormDaywiseHours(DEFAULT_DAYWISE_HOURS);
+        setIsDaywiseCustom(false);
+      }
       setFormStatus((s.status as any) || "DRAFT");
       setFormIsVerified(s.is_verified);
       setFormInfoSource(s.info_source || "");
@@ -445,19 +667,46 @@ export function StoreListingsManagement() {
     fd.append("address", formAddress.trim());
     fd.append("city", formCity.trim());
     fd.append("state", formState.trim());
+    fd.append("country", formCountry.trim() || "India");
     fd.append("pincode", formPincode.trim());
     if (formMapsLink.trim()) fd.append("googleMapsLink", formMapsLink.trim());
-    fd.append("phone", formPhone.trim());
+
+    // Clean multiple phones
+    const validPhones = formPhones.map((p) => p.trim()).filter(Boolean);
+    const primaryPhone = validPhones[0] || formPhone.trim();
+    fd.append("phone", primaryPhone);
+    fd.append("phones", JSON.stringify(validPhones));
+
+    // Clean multiple emails
+    const validEmails = formEmails.map((e) => e.trim()).filter(Boolean);
+    if (validEmails.length > 0) {
+      fd.append("email", validEmails[0]);
+      fd.append("emails", JSON.stringify(validEmails));
+    }
+
     if (formWhatsapp.trim()) fd.append("whatsapp", formWhatsapp.trim());
     if (formWebsite.trim()) fd.append("website", formWebsite.trim());
 
-    const social: Record<string, string> = {};
-    if (formInstagram.trim()) social.instagram = formInstagram.trim();
-    if (formFacebook.trim()) social.facebook = formFacebook.trim();
-    fd.append("socialLinks", JSON.stringify(social));
+    // Multiple social links
+    const socialMap: Record<string, string> = {};
+    formSocialLinks.forEach((item) => {
+      const url = item.url.trim();
+      if (url && item.platform) {
+        socialMap[item.platform] = url;
+      }
+    });
+    fd.append("socialLinks", JSON.stringify(socialMap));
 
+    // Working hours & daywise schedule
     if (formOpeningHours.trim()) fd.append("openingHours", formOpeningHours.trim());
-    fd.append("weeklyHoliday", formWeeklyHoliday);
+    if (isDaywiseCustom) {
+      fd.append("daywiseHours", JSON.stringify(formDaywiseHours));
+    }
+
+    // Weekly holidays (multiple days)
+    const holidays = formWeeklyHolidays.filter(Boolean);
+    fd.append("weeklyHolidays", JSON.stringify(holidays));
+    fd.append("weeklyHoliday", holidays.length > 0 ? holidays.join(", ") : "None");
 
     const finalStatus = targetStatus || formStatus;
     fd.append("status", finalStatus);
@@ -1365,12 +1614,12 @@ export function StoreListingsManagement() {
                 </div>
               </div>
 
-              {/* SECTION 3: Full Address & Map Link */}
+              {/* SECTION 3: Address, Location & Google Maps Link */}
               <div className="sl-form-section">
                 <div className="sl-section-heading">
                   <span className="sl-section-title">
                     <MapPin size={16} style={{ color: "#4C0F2D" }} />
-                    3. Full Address, City, State, PIN & Google Maps Link
+                    3. Address, Location & Google Maps Link
                   </span>
                 </div>
 
@@ -1387,14 +1636,14 @@ export function StoreListingsManagement() {
                   />
                 </div>
 
-                <div className="sl-grid-3">
+                <div className="sl-grid-2">
                   <div className="sl-field">
                     <label className="sl-label">
                       City <span className="req">*</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Bangalore"
+                      placeholder="e.g. Coimbatore"
                       value={formCity}
                       onChange={(e) => setFormCity(e.target.value)}
                       className="sl-input"
@@ -1407,9 +1656,20 @@ export function StoreListingsManagement() {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Karnataka"
+                      placeholder="e.g. Tamil Nadu"
                       value={formState}
                       onChange={(e) => setFormState(e.target.value)}
+                      className="sl-input"
+                    />
+                  </div>
+
+                  <div className="sl-field">
+                    <label className="sl-label">Country</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. India"
+                      value={formCountry}
+                      onChange={(e) => setFormCountry(e.target.value)}
                       className="sl-input"
                     />
                   </div>
@@ -1420,7 +1680,7 @@ export function StoreListingsManagement() {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. 560038"
+                      placeholder="e.g. 641001"
                       value={formPincode}
                       onChange={(e) => setFormPincode(e.target.value)}
                       className="sl-input"
@@ -1442,32 +1702,93 @@ export function StoreListingsManagement() {
                 </div>
               </div>
 
-              {/* SECTION 4: Contact & Social CTAs */}
+              {/* SECTION 4: Contact (Multiple Phones, Emails, WhatsApp, Website & Multiple Social Handles) */}
               <div className="sl-form-section">
                 <div className="sl-section-heading">
                   <span className="sl-section-title">
                     <Phone size={16} style={{ color: "#4C0F2D" }} />
-                    4. Business Phone, WhatsApp, Website & Social Handles
+                    4. Phone Numbers, Email Addresses, Website & Social Handles
                   </span>
                 </div>
 
-                <div className="sl-grid-3">
-                  <div className="sl-field">
-                    <label className="sl-label">
-                      Business Phone <span className="req">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="+91 9876543210"
-                      value={formPhone}
-                      onChange={(e) => setFormPhone(e.target.value)}
-                      className="sl-input"
-                    />
+                {/* Multiple Phone Numbers */}
+                <div className="sl-field">
+                  <label className="sl-label">
+                    Phone Numbers <span className="req">*</span> <span className="opt">(First number is primary call CTA)</span>
+                  </label>
+                  <div className="sl-dynamic-list">
+                    {formPhones.map((ph, idx) => (
+                      <div key={idx} className="sl-dynamic-row">
+                        <input
+                          type="text"
+                          placeholder={idx === 0 ? "Primary Business Phone (e.g. +91 9876543210) *" : `Alternative Phone #${idx + 1}`}
+                          value={ph}
+                          onChange={(e) => updatePhoneField(idx, e.target.value)}
+                          className="sl-input"
+                        />
+                        {formPhones.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removePhoneField(idx)}
+                            className="sl-btn-icon-del"
+                            title="Remove this phone number"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addPhoneField}
+                      className="sl-btn-add-item"
+                    >
+                      <Plus size={13} /> + Add Another Phone Number
+                    </button>
                   </div>
+                </div>
 
+                {/* Multiple Emails */}
+                <div className="sl-field">
+                  <label className="sl-label">
+                    Email Addresses <span className="opt">(Multiple showroom emails supported)</span>
+                  </label>
+                  <div className="sl-dynamic-list">
+                    {formEmails.map((em, idx) => (
+                      <div key={idx} className="sl-dynamic-row">
+                        <input
+                          type="email"
+                          placeholder={idx === 0 ? "Primary Email (e.g. contact@jewellers.com)" : `Secondary Email #${idx + 1}`}
+                          value={em}
+                          onChange={(e) => updateEmailField(idx, e.target.value)}
+                          className="sl-input"
+                        />
+                        {formEmails.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeEmailField(idx)}
+                            className="sl-btn-icon-del"
+                            title="Remove this email address"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addEmailField}
+                      className="sl-btn-add-item"
+                    >
+                      <Plus size={13} /> + Add Another Email Address
+                    </button>
+                  </div>
+                </div>
+
+                <div className="sl-grid-2">
                   <div className="sl-field">
                     <label className="sl-label">
-                      WhatsApp Number <span className="opt">(with country code)</span>
+                      WhatsApp Number <span className="opt">(powers WhatsApp CTA, include country code)</span>
                     </label>
                     <input
                       type="text"
@@ -1492,65 +1813,194 @@ export function StoreListingsManagement() {
                   </div>
                 </div>
 
-                <div className="sl-grid-2">
-                  <div className="sl-field">
-                    <label className="sl-label">Instagram Handle / URL</label>
-                    <input
-                      type="text"
-                      placeholder="https://instagram.com/storename"
-                      value={formInstagram}
-                      onChange={(e) => setFormInstagram(e.target.value)}
-                      className="sl-input"
-                    />
+                {/* Multiple Social Network Profiles */}
+                <div className="sl-field" style={{ marginTop: "6px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                    <label className="sl-label">
+                      Social Network Profiles <span className="opt">(Instagram, Facebook, YouTube, X, Pinterest, LinkedIn, etc.)</span>
+                    </label>
+                    <span style={{ fontSize: "11px", color: "#8a7b81" }}>Add as many platforms as needed</span>
                   </div>
-
-                  <div className="sl-field">
-                    <label className="sl-label">Facebook Profile / Page</label>
-                    <input
-                      type="text"
-                      placeholder="https://facebook.com/storename"
-                      value={formFacebook}
-                      onChange={(e) => setFormFacebook(e.target.value)}
-                      className="sl-input"
-                    />
+                  <div className="sl-dynamic-list">
+                    {formSocialLinks.map((item, idx) => {
+                      const platformInfo = SOCIAL_PLATFORMS.find((p) => p.id === item.platform) || {
+                        placeholder: "https://..."
+                      };
+                      return (
+                        <div key={idx} className="sl-social-row">
+                          <select
+                            value={item.platform}
+                            onChange={(e) => updateSocialPlatform(idx, e.target.value)}
+                            className="sl-select"
+                          >
+                            {SOCIAL_PLATFORMS.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="url"
+                            placeholder={platformInfo.placeholder}
+                            value={item.url}
+                            onChange={(e) => updateSocialUrl(idx, e.target.value)}
+                            className="sl-input"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeSocialField(idx)}
+                            className="sl-btn-icon-del"
+                            title="Remove this social link"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    <button
+                      type="button"
+                      onClick={addSocialField}
+                      className="sl-btn-add-item"
+                    >
+                      <Plus size={13} /> + Add Social Network Profile
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 5: Operating Hours & Weekly Holiday */}
+              {/* SECTION 5: Operating Hours & Multi-Day Weekly Holidays */}
               <div className="sl-form-section">
                 <div className="sl-section-heading">
                   <span className="sl-section-title">
                     <Clock size={16} style={{ color: "#4C0F2D" }} />
-                    5. Opening Hours & Weekly Holiday
+                    5. Operating Hours & Weekly Off
                   </span>
                 </div>
 
-                <div className="sl-grid-2">
+                {/* Multi-Day Weekly Off Pills */}
+                <div className="sl-field">
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                    <label className="sl-label">
+                      Weekly Off Days <span className="opt">(Select one or multiple days store is closed)</span>
+                    </label>
+                    {formWeeklyHolidays.length > 0 && (
+                      <span style={{ fontSize: "11px", fontWeight: 700, color: "#4C0F2D" }}>
+                        Selected: {formWeeklyHolidays.join(", ")}
+                      </span>
+                    )}
+                  </div>
+                  <div className="sl-pills-row">
+                    <button
+                      type="button"
+                      onClick={clearWeeklyHolidays}
+                      className={`sl-day-pill all-open ${formWeeklyHolidays.length === 0 ? "active" : ""}`}
+                    >
+                      {formWeeklyHolidays.length === 0 ? <Check size={12} /> : null} Open 7 Days (No Weekly Off)
+                    </button>
+                    {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => {
+                      const isActive = formWeeklyHolidays.includes(day);
+                      return (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={() => toggleWeeklyHoliday(day)}
+                          className={`sl-day-pill ${isActive ? "active" : ""}`}
+                        >
+                          {isActive ? <Check size={12} /> : null} {day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Standard Operating Hours */}
+                <div className="sl-grid-2" style={{ alignItems: "flex-end" }}>
                   <div className="sl-field">
-                    <label className="sl-label">Opening Hours</label>
+                    <label className="sl-label">Standard Operating Hours</label>
                     <input
                       type="text"
-                      placeholder="e.g. 10:30 AM - 08:30 PM"
+                      placeholder="e.g. 10:00 AM - 08:30 PM"
                       value={formOpeningHours}
                       onChange={(e) => setFormOpeningHours(e.target.value)}
                       className="sl-input"
                     />
                   </div>
-
-                  <div className="sl-field">
-                    <label className="sl-label">Weekly Holiday</label>
-                    <select
-                      value={formWeeklyHoliday}
-                      onChange={(e) => setFormWeeklyHoliday(e.target.value)}
-                      className="sl-select"
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      type="button"
+                      onClick={() => setIsDaywiseCustom(!isDaywiseCustom)}
+                      className="sl-btn-secondary"
+                      style={{ flex: 1, padding: "10px 14px", fontSize: "12px" }}
                     >
-                      {WEEKLY_DAYS.map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
+                      <Sliders size={14} />
+                      <span>{isDaywiseCustom ? "Hide Day-wise Hours" : "Customize Day-wise Hours"}</span>
+                      {isDaywiseCustom ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
                   </div>
                 </div>
+
+                {/* Daywise Operating Hours Grid */}
+                {isDaywiseCustom && (
+                  <div className="sl-daywise-box">
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #ebdbe2", paddingBottom: "8px" }}>
+                      <span style={{ fontSize: "12px", fontWeight: 700, color: "#4C0F2D" }}>
+                        Day-by-Day Working Hours Breakdown:
+                      </span>
+                      <button
+                        type="button"
+                        onClick={applyStandardHoursToAllOpen}
+                        className="sl-btn-add-item"
+                        style={{ margin: 0, padding: "4px 8px", fontSize: "11px" }}
+                      >
+                        ⚡ Apply Standard Hours to Open Days
+                      </button>
+                    </div>
+
+                    {DAYS_OF_WEEK.map((day) => {
+                      const schedule = formDaywiseHours[day] || {
+                        open: "10:00 AM",
+                        close: "08:30 PM",
+                        is_closed: formWeeklyHolidays.includes(day)
+                      };
+                      return (
+                        <div key={day} className="sl-day-row">
+                          <span className="sl-day-label">{day}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateDaySchedule(day, "is_closed", !schedule.is_closed)}
+                            className={`sl-day-toggle ${schedule.is_closed ? "closed" : "open"}`}
+                          >
+                            {schedule.is_closed ? "Closed (Off)" : "Open"}
+                          </button>
+                          {!schedule.is_closed ? (
+                            <>
+                              <input
+                                type="text"
+                                placeholder="Open: 10:00 AM"
+                                value={schedule.open}
+                                onChange={(e) => updateDaySchedule(day, "open", e.target.value)}
+                                className="sl-input"
+                                style={{ padding: "6px 10px", fontSize: "12px" }}
+                              />
+                              <input
+                                type="text"
+                                placeholder="Close: 08:30 PM"
+                                value={schedule.close}
+                                onChange={(e) => updateDaySchedule(day, "close", e.target.value)}
+                                className="sl-input"
+                                style={{ padding: "6px 10px", fontSize: "12px" }}
+                              />
+                            </>
+                          ) : (
+                            <span style={{ gridColumn: "span 2", fontSize: "12px", color: "#991b1b", fontStyle: "italic" }}>
+                              Showroom closed on this day (Weekly off)
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* SECTION 6: Offers with Validity Dates & Terms (Auto-Expiry Supported) */}
@@ -1888,7 +2338,7 @@ export function StoreListingsManagement() {
                         <p className="sl-preview-loc-text">
                           <MapPin size={14} style={{ color: "#dc2626", flexShrink: 0 }} />
                           <span>
-                            <strong>{previewStore.address}</strong> • {previewStore.city}, {previewStore.state} {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
+                            <strong>{previewStore.address}</strong> • {previewStore.city}, {previewStore.state}, {previewStore.country || "India"} {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
                           </span>
                         </p>
                         {previewStore.categories && previewStore.categories.length > 0 && (
@@ -1912,8 +2362,8 @@ export function StoreListingsManagement() {
                     </div>
                   </div>
 
-                  {/* ── 4 BIG CUSTOMER CONTACT CTAs ── */}
-                  <div className="sl-cta-grid">
+                  {/* ── CUSTOMER CONTACT CTAs (Website, Directions, Call, WhatsApp, Email) ── */}
+                  <div className="sl-cta-grid" style={{ gridTemplateColumns: (previewStore.email || (previewStore.emails && previewStore.emails.length > 0)) ? "repeat(auto-fit, minmax(130px, 1fr))" : undefined }}>
                     <a
                       href={previewStore.website || "#"}
                       target="_blank"
@@ -1959,6 +2409,17 @@ export function StoreListingsManagement() {
                       <WhatsAppIcon size={16} />
                       <span>WhatsApp Store</span>
                     </a>
+
+                    {(previewStore.email || (previewStore.emails && previewStore.emails.length > 0)) && (
+                      <a
+                        href={`mailto:${previewStore.email || previewStore.emails?.[0]}`}
+                        className="sl-cta-btn email"
+                        style={{ backgroundColor: "#ffffff", border: "1px solid #ebdbe2", color: "#4C0F2D" }}
+                      >
+                        <Mail size={16} style={{ color: "#4C0F2D" }} />
+                        <span>Email Store</span>
+                      </a>
+                    )}
                   </div>
 
                   {/* About Store Description */}
@@ -1970,29 +2431,148 @@ export function StoreListingsManagement() {
                     </div>
                   )}
 
-                {/* Timings & Address Details Box */}
-                <div className="sl-grid-2" style={{ marginBottom: "22px" }}>
+                                {/* ── Comprehensive Details Grid: Address, Contacts, Schedule & Socials ── */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px", marginBottom: "22px" }}>
+                  {/* Card 1: Address & Country */}
                   <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
-                    <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "block", marginBottom: "4px" }}>
-                      📍 Showroom Address
+                    <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                      <MapPin size={14} style={{ color: "#dc2626" }} /> Showroom Location
                     </span>
-                    <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 2px 0" }}>{previewStore.address}</p>
-                    <p style={{ fontSize: "12px", color: "#8a7b81", margin: 0 }}>
-                      {previewStore.city}, {previewStore.state} {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
+                    <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 4px 0", fontWeight: 500 }}>
+                      {previewStore.address}
+                    </p>
+                    <p style={{ fontSize: "12.5px", color: "#7a636f", margin: 0 }}>
+                      <strong>{previewStore.city}</strong>, {previewStore.state}, <strong>{previewStore.country || "India"}</strong> {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
                     </p>
                   </div>
 
+                  {/* Card 2: Contact Numbers & Email Addresses */}
                   <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
-                    <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "block", marginBottom: "4px" }}>
-                      ⏰ Opening Hours & Weekly Off
+                    <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                      <Phone size={14} style={{ color: "#b4860b" }} /> Contact Phone & Email
                     </span>
-                    <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 2px 0" }}>
-                      Hours: {previewStore.opening_hours || "10:30 AM - 08:30 PM"}
-                    </p>
-                    <p style={{ fontSize: "12px", color: "#8a7b81", margin: 0 }}>
-                      Weekly Holiday: <strong style={{ color: "#4C0F2D" }}>{previewStore.weekly_holiday || "None"}</strong>
-                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                      {/* Phones list */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "12.5px" }}>
+                        <span style={{ color: "#8a7b81", fontSize: "11px", fontWeight: 700 }}>PHONE:</span>
+                        {(previewStore.phones && previewStore.phones.length > 0 ? previewStore.phones : [previewStore.phone]).map((ph, idx) => (
+                          <a
+                            key={idx}
+                            href={`tel:${ph.replace(/[^0-9+]/g, '')}`}
+                            style={{ color: "#4C0F2D", fontWeight: 600, textDecoration: "none", backgroundColor: "#fbf0f4", padding: "2px 6px", borderRadius: "4px" }}
+                          >
+                            {ph}
+                          </a>
+                        ))}
+                      </div>
+
+                      {/* Emails list */}
+                      {(previewStore.email || (previewStore.emails && previewStore.emails.length > 0)) && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "12.5px", marginTop: "3px" }}>
+                          <span style={{ color: "#8a7b81", fontSize: "11px", fontWeight: 700 }}>EMAIL:</span>
+                          {(previewStore.emails && previewStore.emails.length > 0 ? previewStore.emails : [previewStore.email!]).map((em, idx) => (
+                            <a
+                              key={idx}
+                              href={`mailto:${em}`}
+                              style={{ color: "#1e3a8a", fontWeight: 600, textDecoration: "none", backgroundColor: "#eff6ff", padding: "2px 6px", borderRadius: "4px" }}
+                            >
+                              {em}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Card 3: Operating Hours & Weekly Off with Daywise breakdown */}
+                  <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px", gridColumn: "span 1" }}>
+                    <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                      <Clock size={14} style={{ color: "#059669" }} /> Opening Hours & Weekly Off
+                    </span>
+                    <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 4px 0" }}>
+                      Standard: <strong>{previewStore.opening_hours || "10:00 AM - 08:30 PM"}</strong>
+                    </p>
+                    <p style={{ fontSize: "12.5px", color: "#7a636f", margin: "0 0 6px 0" }}>
+                      Weekly Holiday: <strong style={{ color: (previewStore.weekly_holidays && previewStore.weekly_holidays.length > 0) || (previewStore.weekly_holiday && previewStore.weekly_holiday !== "None") ? "#dc2626" : "#059669" }}>
+                        {previewStore.weekly_holidays && previewStore.weekly_holidays.length > 0
+                          ? previewStore.weekly_holidays.join(", ")
+                          : (previewStore.weekly_holiday || "None (Open 7 Days)")}
+                      </strong>
+                    </p>
+
+                    {/* Daywise Breakdown if available */}
+                    {previewStore.daywise_hours && (
+                      <div style={{ marginTop: "8px", borderTop: "1px dashed #ebdbe2", paddingTop: "8px" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 700, color: "#8a7b81", display: "block", marginBottom: "4px" }}>
+                          DAY-BY-DAY SCHEDULE:
+                        </span>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "4px" }}>
+                          {DAYS_OF_WEEK.map((d) => {
+                            const sched = (previewStore.daywise_hours as any)?.[d];
+                            if (!sched) return null;
+                            return (
+                              <div
+                                key={d}
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  fontSize: "11px",
+                                  padding: "3px 6px",
+                                  borderRadius: "4px",
+                                  backgroundColor: sched.is_closed ? "#fee2e2" : "#f0fdf4",
+                                  color: sched.is_closed ? "#991b1b" : "#166534"
+                                }}
+                              >
+                                <strong>{d.slice(0, 3)}:</strong>
+                                <span>{sched.is_closed ? "Off" : `${sched.open} - ${sched.close}`}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Card 4: Social Network Profiles */}
+                  {previewStore.social_links && Object.keys(previewStore.social_links).length > 0 && (
+                    <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
+                      <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                        <Share2 size={14} style={{ color: "#7c3aed" }} /> Social Network Channels
+                      </span>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                        {Object.entries(previewStore.social_links).map(([platform, url]) => {
+                          if (!url) return null;
+                          const found = SOCIAL_PLATFORMS.find((p) => p.id === platform);
+                          const name = found ? found.name : platform;
+                          return (
+                            <a
+                              key={platform}
+                              href={url.startsWith("http") ? url : `https://${url}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "5px",
+                                padding: "4px 8px",
+                                borderRadius: "6px",
+                                backgroundColor: "#ffffff",
+                                border: "1px solid #ebdbe2",
+                                fontSize: "11.5px",
+                                fontWeight: 600,
+                                color: "#4C0F2D",
+                                textDecoration: "none",
+                                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
+                              }}
+                            >
+                              {getSocialIconPreview(platform)}
+                              <span>{name}</span>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Photo Gallery Grid */}

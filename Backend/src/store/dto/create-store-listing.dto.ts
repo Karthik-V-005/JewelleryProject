@@ -29,6 +29,10 @@ export class CreateStoreListingDto {
   state: string;
 
   @IsString()
+  @IsOptional()
+  country?: string;
+
+  @IsString()
   @IsNotEmpty()
   pincode: string;
 
@@ -37,8 +41,18 @@ export class CreateStoreListingDto {
   googleMapsLink?: string;
 
   @IsString()
+  @IsOptional()
+  email?: string;
+
+  @IsOptional()
+  emails?: string[] | string;
+
+  @IsString()
   @IsNotEmpty()
   phone: string;
+
+  @IsOptional()
+  phones?: string[] | string;
 
   @IsString()
   @IsOptional()
@@ -58,6 +72,12 @@ export class CreateStoreListingDto {
   @IsString()
   @IsOptional()
   weeklyHoliday?: string;
+
+  @IsOptional()
+  weeklyHolidays?: string[] | string;
+
+  @IsOptional()
+  daywiseHours?: Record<string, any> | string;
 
   @IsString()
   @IsOptional()

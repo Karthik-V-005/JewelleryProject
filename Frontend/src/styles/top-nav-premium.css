@@ -248,8 +248,8 @@
     }
 }
 
-/* ─── Switch to Drawer at 1140px so links NEVER overflow ─── */
-@media (max-width: 1140px) {
+/* ─── Switch to Drawer at 1260px so links NEVER overflow ─── */
+@media (max-width: 1260px) {
     .pj-header-container {
         padding: 0 16px;
     }

@@ -1954,3 +1954,185 @@
   padding: 2px 6px;
   border-radius: 4px;
 }
+
+
+/* ─── Dynamic Multi-Item Fields (Phones, Emails, Socials) ─── */
+.sl-dynamic-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sl-dynamic-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sl-btn-icon-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 38px;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.sl-btn-icon-del:hover {
+  background-color: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.sl-btn-add-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--sl-color-plum);
+  border: 1px dashed #c49cb0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: all 0.2s ease;
+  margin-top: 2px;
+}
+
+.sl-btn-add-item:hover {
+  background-color: var(--sl-color-plum-soft);
+  border-color: var(--sl-color-plum);
+}
+
+/* ─── Social Network Profile Dynamic Rows ─── */
+.sl-social-row {
+  display: grid;
+  grid-template-columns: 160px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .sl-social-row {
+    grid-template-columns: 1fr auto;
+  }
+  .sl-social-row select {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ─── Multi-Day Weekly Holiday Pills ─── */
+.sl-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.sl-day-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid #e2d1d9;
+  background-color: #ffffff;
+  color: #614a56;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.sl-day-pill:hover {
+  border-color: #b8849a;
+  background-color: #fcf6f9;
+}
+
+.sl-day-pill.active {
+  background: linear-gradient(135deg, #4C0F2D 0%, #721644 100%);
+  color: #ffffff;
+  border-color: #4C0F2D;
+  box-shadow: 0 2px 8px rgba(76, 15, 45, 0.25);
+}
+
+.sl-day-pill.all-open {
+  border-style: dashed;
+  border-color: #10b981;
+  color: #047857;
+  background-color: #ecfdf5;
+}
+
+.sl-day-pill.all-open.active {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  border-color: #047857;
+}
+
+/* ─── Daywise Operating Hours Grid ─── */
+.sl-daywise-box {
+  background-color: #ffffff;
+  border: 1px solid #ebdbe2;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sl-day-row {
+  display: grid;
+  grid-template-columns: 110px 100px 1fr 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background-color: #fdfbfc;
+  border: 1px solid #f3e8ee;
+}
+
+@media (max-width: 640px) {
+  .sl-day-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.sl-day-label {
+  font-weight: 700;
+  font-size: 13px;
+  color: #3b202c;
+}
+
+.sl-day-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.sl-day-toggle.open {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.sl-day-toggle.closed {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-color: #fecaca;
+}

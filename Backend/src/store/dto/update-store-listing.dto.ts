@@ -30,6 +30,10 @@ export class UpdateStoreListingDto {
 
   @IsString()
   @IsOptional()
+  country?: string;
+
+  @IsString()
+  @IsOptional()
   pincode?: string;
 
   @IsString()
@@ -38,7 +42,17 @@ export class UpdateStoreListingDto {
 
   @IsString()
   @IsOptional()
+  email?: string;
+
+  @IsOptional()
+  emails?: string[] | string;
+
+  @IsString()
+  @IsOptional()
   phone?: string;
+
+  @IsOptional()
+  phones?: string[] | string;
 
   @IsString()
   @IsOptional()
@@ -58,6 +72,12 @@ export class UpdateStoreListingDto {
   @IsString()
   @IsOptional()
   weeklyHoliday?: string;
+
+  @IsOptional()
+  weeklyHolidays?: string[] | string;
+
+  @IsOptional()
+  daywiseHours?: Record<string, any> | string;
 
   @IsString()
   @IsOptional()
