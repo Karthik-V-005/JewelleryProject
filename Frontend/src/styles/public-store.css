@@ -41,19 +41,23 @@
   gap: 12px;
   text-decoration: none;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 .pub-brand-logo {
   height: 48px;
   width: auto;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .pub-brand-name {
   font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
-  font-size: 20px;
+  font-size: clamp(16px, 1.8vw, 20px);
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  flex-shrink: 0;
   background: linear-gradient(135deg, #4C0F2D 0%, #b4860b 50%, #4C0F2D 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;

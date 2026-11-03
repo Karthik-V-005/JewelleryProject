@@ -1,10 +1,9 @@
 /* Premium horizontal navbar - Reference Theme */
-@import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Cormorant+Garamond:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Marcellus&family=Cormorant+Garamond:wght@600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 @import './variables.css';
 
 :root {
     --navbar-height: 85px;
-    /* Slightly taller for the new logo scale */
 }
 
 .pj-header-container {
@@ -13,7 +12,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 5%;
+    padding: 0 clamp(16px, 2.8vw, 44px);
     position: fixed;
     top: 0;
     left: 0;
@@ -49,21 +48,25 @@
 .pj-brand {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 10px 0;
+    gap: 12px;
+    padding: 8px 0;
     transition: transform 0.2s ease;
     z-index: 1001;
+    flex-shrink: 0;
+    text-decoration: none;
+    user-select: none;
 }
 
 .pj-brand:hover {
-    transform: scale(1.02);
+    transform: scale(1.015);
 }
 
 .pj-logo-wrapper {
-    height: 55px;
+    height: 48px;
     display: flex;
     align-items: center;
     background: transparent;
+    flex-shrink: 0;
 }
 
 .pj-logo-icon {
@@ -75,11 +78,11 @@
 
 .pj-brand-name {
     font-family: 'Cinzel', 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
-    /* Fluid font size: 24px on mobile, scales to 30px on desktop */
-    font-size: clamp(22px, 3.5vw, 28px);
+    font-size: clamp(17px, 1.8vw, 24px);
     font-weight: 700;
     line-height: 1;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
     background: linear-gradient(135deg, #4C0F2D 0%, #b4860b 50%, #4C0F2D 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
@@ -88,6 +91,8 @@
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
     animation: goldShine 6s linear infinite;
     text-transform: uppercase;
+    display: inline-block;
+    flex-shrink: 0;
 }
 
 @keyframes goldShine {
@@ -103,7 +108,7 @@
 .pj-nav-menu {
     display: flex;
     align-items: center;
-    gap: 36px;
+    gap: clamp(14px, 1.8vw, 32px);
     background: transparent;
 }
 
@@ -119,8 +124,9 @@
     cursor: pointer;
     padding: 10px 4px;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     position: relative;
+    white-space: nowrap;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -155,6 +161,7 @@
 .pj-header-actions {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .pj-btn-action {
@@ -164,11 +171,13 @@
     font-size: 11px;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    padding: 14px 28px;
+    letter-spacing: 0.1em;
+    padding: 12px 24px;
     border-radius: 50px;
     border: none;
     cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 4px 12px rgba(76, 15, 45, 0.1);
 }
@@ -187,7 +196,7 @@
     color: var(--color-plum);
     padding: 8px;
     z-index: 2001;
-    /* Above sidebar */
+    flex-shrink: 0;
 }
 
 .pj-nav-footer-mobile {
@@ -196,20 +205,92 @@
     padding-top: 40px;
 }
 
-/* Responsive Styles */
-@media (max-width: 1024px) {
+/* ─── Intermediate Laptop & Medium Screens ─── */
+@media (max-width: 1380px) {
     .pj-nav-menu {
-        gap: 20px;
+        gap: 18px;
+    }
+
+    .pj-nav-link {
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        padding: 8px 2px;
+    }
+
+    .pj-btn-action {
+        padding: 10px 18px;
+        font-size: 10.5px;
     }
 }
 
+@media (max-width: 1180px) {
+    .pj-header-container {
+        padding: 0 18px;
+    }
+
+    .pj-brand {
+        gap: 10px;
+    }
+
+    .pj-logo-wrapper {
+        height: 42px;
+    }
+
+    .pj-brand-name {
+        font-size: 18px;
+        letter-spacing: 0.06em;
+    }
+
+    .pj-nav-menu {
+        gap: 12px;
+    }
+
+    .pj-nav-link {
+        font-size: 11.5px;
+        letter-spacing: 0.05em;
+        padding: 6px 2px;
+    }
+
+    .pj-btn-action {
+        padding: 8px 14px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .pj-nav-menu {
+        gap: 8px;
+    }
+
+    .pj-nav-link {
+        font-size: 11px;
+        letter-spacing: 0.04em;
+    }
+}
+
+/* ─── Mobile Drawer View ─── */
 @media (max-width: 900px) {
     .pj-header-container {
-        padding: 0 20px;
+        padding: 0 16px;
     }
 
     .pj-mobile-toggle {
         display: block;
+    }
+
+    .pj-brand-name {
+        font-size: clamp(15px, 4.2vw, 19px);
+        letter-spacing: 0.06em;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .pj-logo-wrapper {
+        height: 38px;
+    }
+
+    .pj-brand {
+        gap: 8px;
     }
 
     .pj-nav-menu {
@@ -222,14 +303,12 @@
         background-color: #ffffff;
         flex-direction: column;
         align-items: center;
-        /* Center links for a cleaner look */
         justify-content: flex-start;
         padding: 120px 24px 40px;
         gap: 12px;
         box-shadow: -15px 0 40px rgba(76, 15, 45, 0.1);
         transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         z-index: 2000;
-        /* Sidebar above almost everything */
     }
 
     .pj-nav-menu.mobile-open {
@@ -242,7 +321,7 @@
         font-weight: 600;
         padding: 16px 20px;
         text-align: center;
-        letter-spacing: 0.2em;
+        letter-spacing: 0.15em;
         color: var(--text-muted);
         border: none;
         transition: all 0.3s ease;
@@ -251,7 +330,6 @@
 
     .pj-nav-link.active::after {
         display: none;
-        /* Removed the line completely as requested */
     }
 
     .pj-nav-link.active {
@@ -273,34 +351,22 @@
     .pj-main-layout {
         padding: calc(var(--navbar-height) + 20px) 20px 80px 20px;
     }
-
-    .pj-brand-name {
-        line-height: 0.95;
-    }
-
-    .pj-logo-wrapper {
-        height: 45px;
-    }
 }
 
 @media (max-width: 450px) {
     .pj-brand-name {
-        display: block;
-        font-size: 24px;
-        /* Balanced size for mobile */
-        line-height: 0.95;
-        max-width: 220px;
-        /* Increased to prevent S/E from cutting off */
-        margin-right: 10px;
+        font-size: clamp(13px, 4vw, 16px);
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+        line-height: 1;
     }
 
     .pj-logo-wrapper {
-        height: 42px;
+        height: 32px;
     }
 
     .pj-brand {
-        gap: 8px;
-        /* Slightly tighter gap to save space */
+        gap: 6px;
     }
 }
 
