@@ -251,7 +251,6 @@ export function StoreListingsManagement() {
     setFormWeeklyHolidays((prev) => {
       const exists = prev.includes(day);
       const next = exists ? prev.filter((d) => d !== day) : [...prev, day];
-      setFormWeeklyHoliday(next.length > 0 ? next.join(", ") : "None");
       // Sync daywise hours closed state
       setFormDaywiseHours((currentHours) => {
         const copy = { ...currentHours };
