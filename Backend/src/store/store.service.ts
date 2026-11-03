@@ -592,6 +592,7 @@ export class StoreService {
 
   async getPublicStores(query?: {
     search?: string;
+    country?: string;
     city?: string;
     state?: string;
     category?: string;
@@ -606,6 +607,9 @@ export class StoreService {
       status: 'PUBLISHED',
     };
 
+    if (query?.country && query.country !== 'ALL') {
+      where.country = { equals: query.country, mode: 'insensitive' };
+    }
     if (query?.city) {
       where.city = { equals: query.city, mode: 'insensitive' };
     }

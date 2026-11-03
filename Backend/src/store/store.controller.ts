@@ -19,6 +19,7 @@ export class StoreController {
   @Get()
   getStores(
     @Query('search') search?: string,
+    @Query('country') country?: string,
     @Query('city') city?: string,
     @Query('state') state?: string,
     @Query('category') category?: string,
@@ -27,6 +28,7 @@ export class StoreController {
   ) {
     return this.storeService.getPublicStores({
       search,
+      country,
       city,
       state,
       category,

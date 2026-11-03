@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import {
   Search, Plus, Eye, Pencil, Trash2, CheckCircle2, AlertTriangle,
-  Loader2, RefreshCw, X, Globe, Phone, MessageSquare, MapPin,
+  Loader2, RefreshCw, X, Globe, Phone, MapPin,
   Clock, ShieldCheck, ShieldAlert, ImagePlus, Camera,
   Building2, Tag, AlertCircle, Sparkles, Check, ExternalLink,
-  RotateCcw, Mail, Share2, Calendar, ChevronDown, ChevronUp, Sliders, Instagram, Facebook, Youtube, Twitter, Send
+  RotateCcw, Mail, Share2, ChevronDown, ChevronUp, Sliders, Instagram, Facebook, Youtube, Twitter, Send
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -24,10 +24,6 @@ const PRESET_CATEGORIES = [
   "Temple Jewellery", "Silver", "Platinum", "Gemstones", "Daily Wear"
 ];
 
-const WEEKLY_DAYS = [
-  "None", "Sunday", "Monday", "Tuesday", "Wednesday",
-  "Thursday", "Friday", "Saturday"
-];
 const SOCIAL_PLATFORMS = [
   { id: "instagram", name: "Instagram", placeholder: "https://instagram.com/storename" },
   { id: "facebook", name: "Facebook", placeholder: "https://facebook.com/storename" },
@@ -211,8 +207,7 @@ export function StoreListingsManagement() {
   ]);
 
   const [formOpeningHours, setFormOpeningHours] = useState("10:00 AM - 08:30 PM");
-  const [formWeeklyHoliday, setFormWeeklyHoliday] = useState("None");
-  const [formWeeklyHolidays, setFormWeeklyHolidays] = useState<string[]>(["Sunday"]);
+    const [formWeeklyHolidays, setFormWeeklyHolidays] = useState<string[]>(["Sunday"]);
   const [formDaywiseHours, setFormDaywiseHours] = useState<Record<string, DaySchedule>>(DEFAULT_DAYWISE_HOURS);
   const [isDaywiseCustom, setIsDaywiseCustom] = useState(false);
 
@@ -271,7 +266,6 @@ export function StoreListingsManagement() {
 
   const clearWeeklyHolidays = () => {
     setFormWeeklyHolidays([]);
-    setFormWeeklyHoliday("None");
     setFormDaywiseHours((currentHours) => {
       const copy = { ...currentHours };
       Object.keys(copy).forEach((day) => {
@@ -306,7 +300,7 @@ export function StoreListingsManagement() {
     const parts = formOpeningHours.split("-");
     const openTime = parts[0]?.trim() || "10:00 AM";
     const closeTime = parts[1]?.trim() || "08:30 PM";
-    setFormDaywiseHours((prev) => {
+    setFormDaywiseHours(() => {
       const updated: Record<string, DaySchedule> = {};
       DAYS_OF_WEEK.forEach((day) => {
         const isClosed = formWeeklyHolidays.includes(day);
@@ -515,7 +509,6 @@ export function StoreListingsManagement() {
       { platform: "facebook", url: "" }
     ]);
     setFormOpeningHours("10:00 AM - 08:30 PM");
-    setFormWeeklyHoliday("None");
     setFormWeeklyHolidays(["Sunday"]);
     setFormDaywiseHours(DEFAULT_DAYWISE_HOURS);
     setIsDaywiseCustom(false);
@@ -596,19 +589,27 @@ export function StoreListingsManagement() {
       // Multiple weekly holidays
       if (s.weekly_holidays && Array.isArray(s.weekly_holidays) && s.weekly_holidays.length > 0) {
         setFormWeeklyHolidays(s.weekly_holidays);
-        setFormWeeklyHoliday(s.weekly_holidays.join(", "));
-      } else if (s.weekly_holiday && s.weekly_holiday !== "None") {
+        } else if (s.weekly_holiday && s.weekly_holiday !== "None") {
         const parsed = s.weekly_holiday.split(",").map((x) => x.trim()).filter(Boolean);
         setFormWeeklyHolidays(parsed);
-        setFormWeeklyHoliday(s.weekly_holiday);
-      } else {
+        } else {
         setFormWeeklyHolidays([]);
-        setFormWeeklyHoliday("None");
-      }
+        }
 
       // Daywise hours
       if (s.daywise_hours && typeof s.daywise_hours === "object" && Object.keys(s.daywise_hours).length > 0) {
-        setFormDaywiseHours({ ...DEFAULT_DAYWISE_HOURS, ...s.daywise_hours });
+        const merged: Record<string, DaySchedule> = { ...DEFAULT_DAYWISE_HOURS };
+        DAYS_OF_WEEK.forEach((d) => {
+          const custom = (s.daywise_hours as any)?.[d];
+          if (custom) {
+            merged[d] = {
+              open: custom.open || DEFAULT_DAYWISE_HOURS[d]?.open || "10:00 AM",
+              close: custom.close || DEFAULT_DAYWISE_HOURS[d]?.close || "08:30 PM",
+              is_closed: Boolean(custom.is_closed),
+            };
+          }
+        });
+        setFormDaywiseHours(merged);
         setIsDaywiseCustom(true);
       } else {
         setFormDaywiseHours(DEFAULT_DAYWISE_HOURS);
