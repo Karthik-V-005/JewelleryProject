@@ -90,31 +90,36 @@
 /* Store Hero Banner */
 .pub-hero-banner {
   position: relative;
-  height: clamp(240px, 32vw, 360px);
+  height: clamp(230px, 30vw, 340px);
   background-color: #200613;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 12px 16px 36px 16px;
+  box-sizing: border-box;
 }
 
 .pub-hero-banner-ambient {
   position: absolute;
-  inset: -14px;
+  inset: -18px;
   background-size: cover;
   background-position: center;
-  filter: blur(18px) brightness(0.6) saturate(1.2);
-  transform: scale(1.1);
+  filter: blur(20px) brightness(0.55) saturate(1.25);
+  transform: scale(1.12);
   z-index: 1;
 }
 
 .pub-hero-banner-img {
   position: relative;
   z-index: 2;
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: calc(100% - 24px);
+  width: auto;
+  height: auto;
   object-fit: contain;
   object-position: center center;
+  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.35));
 }
 
 .pub-hero-banner-fallback {
@@ -205,8 +210,10 @@
 }
 
 .pub-logo-box img {
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
   object-fit: contain;
   object-position: center;
 }
