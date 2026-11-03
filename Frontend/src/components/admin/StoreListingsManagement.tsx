@@ -29,6 +29,17 @@ const WEEKLY_DAYS = [
   "Thursday", "Friday", "Saturday"
 ];
 
+/* Helper: Format date as [DATE/MONTH/YEAR] (DD/MM/YYYY) */
+const formatDateDMY = (dateInput: string | Date | null | undefined): string => {
+  if (!dateInput) return "Recently";
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return "Recently";
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 /* ─── Image Dropzone Component ─── */
 function DropZone({
   id, preview, onFile, onRemove, label, required, hint = "Click to upload"
@@ -1037,7 +1048,7 @@ export function StoreListingsManagement() {
 
                     {/* Updated At */}
                     <td style={{ fontSize: "11.5px", color: "#8a7b81", whiteSpace: "nowrap" }}>
-                      {store.updated_at ? new Date(store.updated_at).toLocaleDateString() : "—"}
+                      {store.updated_at ? formatDateDMY(store.updated_at) : "-"}
                     </td>
 
                     {/* Row Actions */}
@@ -1833,8 +1844,20 @@ export function StoreListingsManagement() {
             <div style={{ overflowY: "auto", flex: 1 }}>
               {/* Cover Banner */}
               <div className="sl-preview-banner">
-                {previewStore.cover_photo_url && (
-                  <img src={previewStore.cover_photo_url} alt={previewStore.store_name} />
+                {previewStore.cover_photo_url ? (
+                  <>
+                    <div
+                      className="sl-preview-banner-ambient"
+                      style={{ backgroundImage: `url(${previewStore.cover_photo_url})` }}
+                    />
+                    <img
+                      src={previewStore.cover_photo_url}
+                      alt={previewStore.store_name}
+                      className="sl-preview-banner-main"
+                    />
+                  </>
+                ) : (
+                  <div className="sl-preview-banner-fallback" />
                 )}
                 <div className="sl-preview-banner-overlay" />
               </div>
@@ -1884,7 +1907,7 @@ export function StoreListingsManagement() {
                         {previewStore.status}
                       </span>
                       <span className="sl-preview-updated-date">
-                        Listing updated: {previewStore.updated_at ? new Date(previewStore.updated_at).toLocaleDateString() : "Recently"}
+                        Listing updated: {previewStore.updated_at ? formatDateDMY(previewStore.updated_at) : "Recently"}
                       </span>
                     </div>
                   </div>
@@ -1955,7 +1978,7 @@ export function StoreListingsManagement() {
                     </span>
                     <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 2px 0" }}>{previewStore.address}</p>
                     <p style={{ fontSize: "12px", color: "#8a7b81", margin: 0 }}>
-                      {previewStore.city}, {previewStore.state} — {previewStore.pincode}
+                      {previewStore.city}, {previewStore.state} {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
                     </p>
                   </div>
 

@@ -13,6 +13,17 @@ import { WhatsAppIcon } from "../common/WhatsAppIcon";
 import icon from "../../assets/icon.png";
 import "../../styles/public-store.css";
 
+/* Helper: Format date as [DATE/MONTH/YEAR] (DD/MM/YYYY) */
+const formatDateDMY = (dateInput: string | Date | null | undefined): string => {
+  if (!dateInput) return "Recently";
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return "Recently";
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
 interface PublicStoreProfilePageProps {
   slug?: string;
   onNavigateBack?: () => void;
@@ -241,13 +252,22 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
       </header>
 
       {/* ── Store Cover Hero Banner ── */}
-      <div
-        className="pub-hero-banner"
-        style={{
-          backgroundImage: store.cover_photo_url ? `url(${store.cover_photo_url})` : undefined,
-          backgroundColor: store.cover_photo_url ? "#200613" : "#4C0F2D",
-        }}
-      >
+      <div className="pub-hero-banner">
+        {store.cover_photo_url ? (
+          <>
+            <div
+              className="pub-hero-banner-ambient"
+              style={{ backgroundImage: `url(${store.cover_photo_url})` }}
+            />
+            <img
+              src={store.cover_photo_url}
+              alt={store.store_name}
+              className="pub-hero-banner-img"
+            />
+          </>
+        ) : (
+          <div className="pub-hero-banner-fallback" />
+        )}
         <div className="pub-hero-overlay" />
       </div>
 
@@ -293,7 +313,7 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
             </div>
 
             <div style={{ textAlign: "right", fontSize: "12px", color: "#8a7b82" }}>
-              <span>Listing updated: {store.updated_at ? new Date(store.updated_at).toLocaleDateString() : "Recently"}</span>
+              <span>Listing updated: {store.updated_at ? formatDateDMY(store.updated_at) : "Recently"}</span>
             </div>
           </div>
 
@@ -412,7 +432,7 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
                     <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                       {offer.end_date && (
                         <span className="pub-offer-validity">
-                          📅 Valid Until: {new Date(offer.end_date).toLocaleDateString()}
+                          📅 Valid Until: {formatDateDMY(offer.end_date)}
                         </span>
                       )}
                       {offer.terms && (
