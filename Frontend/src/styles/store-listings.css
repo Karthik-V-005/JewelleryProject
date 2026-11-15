@@ -628,37 +628,35 @@
 /* Actions Column */
 .sl-table th.sl-col-actions,
 .sl-table td.sl-col-actions {
-  position: sticky;
-  right: 0;
-  z-index: 5;
-  min-width: 160px;
-  width: 160px;
   text-align: right;
-  border-left: 1px solid rgba(76, 15, 45, 0.04);
+  border-left: none !important;
+  box-shadow: none !important;
+  white-space: nowrap;
 }
 
 .sl-table thead th.sl-col-actions {
   background-color: #fafbfc;
-  z-index: 6;
+  border-left: none !important;
 }
 
 .sl-table td.sl-col-actions {
-  background-color: #ffffff;
+  background-color: transparent;
+  border-left: none !important;
 }
 
 .sl-table tbody tr:hover td.sl-col-actions {
-  background-color: #fef9fb;
+  background-color: transparent;
 }
 
 /* Last Updated Badge - Premium Pill Style matching other columns */
 .sl-updated-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 11px;
+  gap: 5px;
+  padding: 3px 9px;
   border-radius: 9999px;
   font-family: var(--sl-font-body);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   background-color: #faf4f7;
   border: 1px solid #ebdbe2;
@@ -684,22 +682,38 @@
 }
 
 .sl-table th {
-  padding: 14px 18px;
+  padding: 12px 10px;
   font-family: var(--sl-font-body);
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   color: #735e69;
   white-space: nowrap;
 }
 
+.sl-table th:first-child {
+  padding-left: 18px;
+}
+
+.sl-table th:last-child {
+  padding-right: 18px;
+}
+
 .sl-table td {
-  padding: 15px 18px;
+  padding: 12px 10px;
   font-family: var(--sl-font-body);
   font-size: 13px;
   border-bottom: 1px solid #f6ecf1;
   vertical-align: middle;
+}
+
+.sl-table td:first-child {
+  padding-left: 18px;
+}
+
+.sl-table td:last-child {
+  padding-right: 18px;
 }
 
 .sl-table tr:last-child td {
@@ -717,15 +731,15 @@
 .sl-store-cell {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-width: 260px;
-  max-width: 330px;
+  gap: 10px;
+  min-width: 170px;
+  max-width: 260px;
 }
 
 .sl-store-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background-color: #ffffff;
   border: 1px solid #ebdbe2;
   overflow: hidden;
@@ -733,8 +747,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  padding: 2px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
 .sl-store-avatar img {
@@ -955,14 +969,14 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 5px;
+  gap: 4px;
   white-space: nowrap;
 }
 
 .sl-icon-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   border: 1px solid #dfcdd6;
   background-color: #ffffff;
   color: var(--sl-color-plum);

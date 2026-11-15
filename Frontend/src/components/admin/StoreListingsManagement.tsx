@@ -1172,13 +1172,13 @@ export function StoreListingsManagement() {
             <table className="sl-table">
               <thead>
                 <tr>
-                  <th style={{ minWidth: "200px" }}>Store Identity</th>
-                  <th style={{ minWidth: "140px" }}>Location</th>
-                  <th style={{ minWidth: "120px" }}>Categories</th>
-                  <th style={{ minWidth: "115px" }}>Verification</th>
-                  <th style={{ minWidth: "95px" }}>Status</th>
-                  <th style={{ minWidth: "140px", whiteSpace: "nowrap" }}>Last Updated</th>
-                  <th className="sl-col-actions" style={{ minWidth: "160px", width: "160px", textAlign: "right" }}>Actions</th>
+                  <th style={{ minWidth: "170px" }}>Store Identity</th>
+                  <th style={{ minWidth: "115px" }}>Location</th>
+                  <th style={{ minWidth: "85px" }}>Categories</th>
+                  <th style={{ minWidth: "90px" }}>Verification</th>
+                  <th style={{ minWidth: "75px" }}>Status</th>
+                  <th style={{ minWidth: "95px", whiteSpace: "nowrap" }}>Last Updated</th>
+                  <th className="sl-col-actions" style={{ minWidth: "124px", width: "124px", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1349,7 +1349,7 @@ export function StoreListingsManagement() {
                     {/* Last Updated Badge */}
                     <td>
                       <div className="sl-updated-badge" title={`Last updated on ${store.updated_at ? formatDateDMY(store.updated_at) : "Recently"}`}>
-                        <Calendar size={12} className="sl-updated-icon" />
+                        <Calendar size={11} className="sl-updated-icon" />
                         <span>{store.updated_at ? formatDateDMY(store.updated_at) : "Recently"}</span>
                       </div>
                     </td>
@@ -1362,7 +1362,7 @@ export function StoreListingsManagement() {
                           className="sl-icon-btn"
                           title="Preview Customer Store Profile Modal"
                         >
-                          <Eye size={15} />
+                          <Eye size={14} />
                         </button>
 
                         <a
@@ -1373,7 +1373,7 @@ export function StoreListingsManagement() {
                           title={`Open Live Store Page on User Panel (${getUserPanelStoreUrl(store.slug)})`}
                           style={{ color: "#7b1a4a", textDecoration: "none" }}
                         >
-                          <ExternalLink size={15} />
+                          <ExternalLink size={14} />
                         </a>
 
                         <button
@@ -1381,7 +1381,7 @@ export function StoreListingsManagement() {
                           className="sl-icon-btn"
                           title="Edit Store Listing"
                         >
-                          <Pencil size={15} />
+                          <Pencil size={14} />
                         </button>
 
                         <button
@@ -1389,7 +1389,7 @@ export function StoreListingsManagement() {
                           className="sl-icon-btn delete"
                           title="Delete Store Listing"
                         >
-                          <Trash2 size={15} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>
