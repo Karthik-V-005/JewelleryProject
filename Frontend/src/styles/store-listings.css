@@ -625,16 +625,16 @@
   background-color: #fdfafc;
 }
 
-/* Sticky Actions Column - Stays Fixed on the Right Edge */
+/* Actions Column */
 .sl-table th.sl-col-actions,
 .sl-table td.sl-col-actions {
   position: sticky;
   right: 0;
   z-index: 5;
-  box-shadow: -4px 0 10px -2px rgba(76, 15, 45, 0.08);
-  min-width: 170px;
-  width: 170px;
+  min-width: 160px;
+  width: 160px;
   text-align: right;
+  border-left: 1px solid rgba(76, 15, 45, 0.04);
 }
 
 .sl-table thead th.sl-col-actions {
@@ -648,6 +648,34 @@
 
 .sl-table tbody tr:hover td.sl-col-actions {
   background-color: #fef9fb;
+}
+
+/* Last Updated Badge - Premium Pill Style matching other columns */
+.sl-updated-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 9999px;
+  font-family: var(--sl-font-body);
+  font-size: 11.5px;
+  font-weight: 600;
+  background-color: #faf4f7;
+  border: 1px solid #ebdbe2;
+  color: #5c3b49;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.sl-updated-badge:hover {
+  background-color: #f6e6ee;
+  border-color: #dfc2ce;
+  color: #4C0F2D;
+}
+
+.sl-updated-icon {
+  color: #8c6b7b;
+  flex-shrink: 0;
 }
 
 .sl-table thead tr {

@@ -4,7 +4,7 @@ import {
   Loader2, RefreshCw, X, Globe, Phone, MapPin,
   Clock, ShieldCheck, ShieldAlert, ImagePlus, Camera,
   Building2, Tag, AlertCircle, Sparkles, Check, ExternalLink,
-  RotateCcw, Mail, Share2, ChevronDown, ChevronUp, Sliders, Instagram, Facebook, Youtube, Twitter, Send
+  RotateCcw, Mail, Share2, ChevronDown, ChevronUp, Sliders, Instagram, Facebook, Youtube, Twitter, Send, Calendar
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -1172,13 +1172,13 @@ export function StoreListingsManagement() {
             <table className="sl-table">
               <thead>
                 <tr>
-                  <th style={{ minWidth: "190px" }}>Store Identity</th>
+                  <th style={{ minWidth: "200px" }}>Store Identity</th>
                   <th style={{ minWidth: "140px" }}>Location</th>
                   <th style={{ minWidth: "120px" }}>Categories</th>
                   <th style={{ minWidth: "115px" }}>Verification</th>
                   <th style={{ minWidth: "95px" }}>Status</th>
-                  <th style={{ minWidth: "85px" }}>Last Updated</th>
-                  <th className="sl-col-actions" style={{ minWidth: "170px", width: "170px", textAlign: "right" }}>Actions</th>
+                  <th style={{ minWidth: "140px", whiteSpace: "nowrap" }}>Last Updated</th>
+                  <th className="sl-col-actions" style={{ minWidth: "160px", width: "160px", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1346,9 +1346,12 @@ export function StoreListingsManagement() {
                       </button>
                     </td>
 
-                    {/* Updated At */}
-                    <td style={{ fontSize: "11.5px", color: "#8a7b81", whiteSpace: "nowrap" }}>
-                      {store.updated_at ? formatDateDMY(store.updated_at) : "-"}
+                    {/* Last Updated Badge */}
+                    <td>
+                      <div className="sl-updated-badge" title={`Last updated on ${store.updated_at ? formatDateDMY(store.updated_at) : "Recently"}`}>
+                        <Calendar size={12} className="sl-updated-icon" />
+                        <span>{store.updated_at ? formatDateDMY(store.updated_at) : "Recently"}</span>
+                      </div>
                     </td>
 
                     {/* Row Actions */}
