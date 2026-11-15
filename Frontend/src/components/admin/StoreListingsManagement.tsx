@@ -209,7 +209,7 @@ export function StoreListingsManagement() {
   ]);
 
   const [formOpeningHours, setFormOpeningHours] = useState("10:00 AM - 08:30 PM");
-    const [formWeeklyHolidays, setFormWeeklyHolidays] = useState<string[]>(["Sunday"]);
+  const [formWeeklyHolidays, setFormWeeklyHolidays] = useState<string[]>(["Sunday"]);
   const [formDaywiseHours, setFormDaywiseHours] = useState<Record<string, DaySchedule>>(DEFAULT_DAYWISE_HOURS);
   const [isDaywiseCustom, setIsDaywiseCustom] = useState(false);
 
@@ -595,12 +595,12 @@ export function StoreListingsManagement() {
       // Multiple weekly holidays
       if (s.weekly_holidays && Array.isArray(s.weekly_holidays) && s.weekly_holidays.length > 0) {
         setFormWeeklyHolidays(s.weekly_holidays);
-        } else if (s.weekly_holiday && s.weekly_holiday !== "None") {
+      } else if (s.weekly_holiday && s.weekly_holiday !== "None") {
         const parsed = s.weekly_holiday.split(",").map((x) => x.trim()).filter(Boolean);
         setFormWeeklyHolidays(parsed);
-        } else {
+      } else {
         setFormWeeklyHolidays([]);
-        }
+      }
 
       // Daywise hours
       if (s.daywise_hours && typeof s.daywise_hours === "object" && Object.keys(s.daywise_hours).length > 0) {
@@ -680,7 +680,7 @@ export function StoreListingsManagement() {
   /* ─── Save Store (Create or Update) ─── */
   const handleSaveStore = async (targetStatus?: "DRAFT" | "PUBLISHED") => {
     if (!formStoreName.trim()) return toast.error("Store Name is required");
-    
+
     // Address validation based on Store Type
     if (formStoreType === "OFFLINE") {
       if (!formAddress.trim()) return toast.error("Full Street Address is required for offline showrooms");
@@ -1334,14 +1334,12 @@ export function StoreListingsManagement() {
                     <td>
                       <button
                         onClick={() => handleTogglePublish(store)}
-                        className={`sl-badge-toggle ${
-                          store.status === "PUBLISHED" ? "published" : store.status === "DRAFT" ? "draft" : "unpublished"
-                        }`}
+                        className={`sl-badge-toggle ${store.status === "PUBLISHED" ? "published" : store.status === "DRAFT" ? "draft" : "unpublished"
+                          }`}
                         title="Click to toggle status between Published / Unpublished"
                       >
-                        <span className={`sl-status-dot ${
-                          store.status === "PUBLISHED" ? "green" : store.status === "DRAFT" ? "amber" : "gray"
-                        }`} />
+                        <span className={`sl-status-dot ${store.status === "PUBLISHED" ? "green" : store.status === "DRAFT" ? "amber" : "gray"
+                          }`} />
                         <span>{store.status}</span>
                       </button>
                     </td>
@@ -2614,122 +2612,164 @@ export function StoreListingsManagement() {
                     </div>
                   )}
 
-                                {/* ── Comprehensive Details Grid: Address, Contacts, Schedule & Socials ── */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px", marginBottom: "22px" }}>
-                  {/* Card 1: Address & Country */}
-                  <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
-                    <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  {/* ── Comprehensive Details Grid: Address, Contacts, Schedule & Socials ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "14px", marginBottom: "22px" }}>
+                    {/* Card 1: Address & Country */}
+                    <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
+                      <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                        {previewStore.store_type === "ONLINE" ? (
+                          <>
+                            <Globe size={14} style={{ color: "#2563eb" }} /> Store Presence
+                          </>
+                        ) : (
+                          <>
+                            <MapPin size={14} style={{ color: "#dc2626" }} /> Showroom Location
+                          </>
+                        )}
+                      </span>
                       {previewStore.store_type === "ONLINE" ? (
                         <>
-                          <Globe size={14} style={{ color: "#2563eb" }} /> Store Presence
+                          <p style={{ fontSize: "13px", color: "#1e3a8a", margin: "0 0 4px 0", fontWeight: 700 }}>
+                            🌐 Online Store
+                          </p>
+                          <p style={{ fontSize: "12.5px", color: "#7a636f", margin: 0 }}>
+                            {previewStore.city && previewStore.city !== "Online" ? `${previewStore.city}, ` : ""}{previewStore.state && previewStore.state !== "Online" ? `${previewStore.state}, ` : ""}{previewStore.country || "India"}
+                          </p>
                         </>
                       ) : (
                         <>
-                          <MapPin size={14} style={{ color: "#dc2626" }} /> Showroom Location
+                          <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 4px 0", fontWeight: 500 }}>
+                            {previewStore.address}
+                          </p>
+                          <p style={{ fontSize: "12.5px", color: "#7a636f", margin: 0 }}>
+                            <strong>{previewStore.city}</strong>, {previewStore.state}, <strong>{previewStore.country || "India"}</strong> {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
+                          </p>
                         </>
                       )}
-                    </span>
-                    {previewStore.store_type === "ONLINE" ? (
-                      <>
-                        <p style={{ fontSize: "13px", color: "#1e3a8a", margin: "0 0 4px 0", fontWeight: 700 }}>
-                          🌐 Online Store
-                        </p>
-                        <p style={{ fontSize: "12.5px", color: "#7a636f", margin: 0 }}>
-                          {previewStore.city && previewStore.city !== "Online" ? `${previewStore.city}, ` : ""}{previewStore.state && previewStore.state !== "Online" ? `${previewStore.state}, ` : ""}{previewStore.country || "India"}
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 4px 0", fontWeight: 500 }}>
-                          {previewStore.address}
-                        </p>
-                        <p style={{ fontSize: "12.5px", color: "#7a636f", margin: 0 }}>
-                          <strong>{previewStore.city}</strong>, {previewStore.state}, <strong>{previewStore.country || "India"}</strong> {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
-                        </p>
-                      </>
-                    )}
-                  </div>
+                    </div>
 
-                  {/* Card 2: Contact Numbers & Email Addresses */}
-                  <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
-                    <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                      <Phone size={14} style={{ color: "#b4860b" }} /> Contact Phone & Email
-                    </span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                      {/* Phones list */}
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "12.5px" }}>
-                        <span style={{ color: "#8a7b81", fontSize: "11px", fontWeight: 700 }}>PHONE:</span>
-                        {(previewStore.phones && previewStore.phones.length > 0 ? previewStore.phones : [previewStore.phone]).map((ph, idx) => (
-                          <a
-                            key={idx}
-                            href={`tel:${ph.replace(/[^0-9+]/g, '')}`}
-                            style={{ color: "#4C0F2D", fontWeight: 600, textDecoration: "none", backgroundColor: "#fbf0f4", padding: "2px 6px", borderRadius: "4px" }}
-                          >
-                            {ph}
-                          </a>
-                        ))}
-                      </div>
-
-                      {/* Emails list */}
-                      {(previewStore.email || (previewStore.emails && previewStore.emails.length > 0)) && (
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "12.5px", marginTop: "3px" }}>
-                          <span style={{ color: "#8a7b81", fontSize: "11px", fontWeight: 700 }}>EMAIL:</span>
-                          {(previewStore.emails && previewStore.emails.length > 0 ? previewStore.emails : [previewStore.email!]).map((em, idx) => (
+                    {/* Card 2: Contact Numbers & Email Addresses */}
+                    <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
+                      <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                        <Phone size={14} style={{ color: "#b4860b" }} /> Contact Phone & Email
+                      </span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        {/* Phones list */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "12.5px" }}>
+                          <span style={{ color: "#8a7b81", fontSize: "11px", fontWeight: 700 }}>PHONE:</span>
+                          {(previewStore.phones && previewStore.phones.length > 0 ? previewStore.phones : [previewStore.phone]).map((ph, idx) => (
                             <a
                               key={idx}
-                              href={`mailto:${em}`}
-                              style={{ color: "#1e3a8a", fontWeight: 600, textDecoration: "none", backgroundColor: "#eff6ff", padding: "2px 6px", borderRadius: "4px" }}
+                              href={`tel:${ph.replace(/[^0-9+]/g, '')}`}
+                              style={{ color: "#4C0F2D", fontWeight: 600, textDecoration: "none", backgroundColor: "#fbf0f4", padding: "2px 6px", borderRadius: "4px" }}
                             >
-                              {em}
+                              {ph}
                             </a>
                           ))}
                         </div>
+
+                        {/* Emails list */}
+                        {(previewStore.email || (previewStore.emails && previewStore.emails.length > 0)) && (
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "12.5px", marginTop: "3px" }}>
+                            <span style={{ color: "#8a7b81", fontSize: "11px", fontWeight: 700 }}>EMAIL:</span>
+                            {(previewStore.emails && previewStore.emails.length > 0 ? previewStore.emails : [previewStore.email!]).map((em, idx) => (
+                              <a
+                                key={idx}
+                                href={`mailto:${em}`}
+                                style={{ color: "#1e3a8a", fontWeight: 600, textDecoration: "none", backgroundColor: "#eff6ff", padding: "2px 6px", borderRadius: "4px" }}
+                              >
+                                {em}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card 3: Operating Hours & Weekly Off with Daywise breakdown */}
+                    <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px", gridColumn: "span 1" }}>
+                      <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                        <Clock size={14} style={{ color: "#059669" }} /> Opening Hours & Weekly Off
+                      </span>
+                      <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 4px 0" }}>
+                        Standard: <strong>{previewStore.opening_hours || "10:00 AM - 08:30 PM"}</strong>
+                      </p>
+                      <p style={{ fontSize: "12.5px", color: "#7a636f", margin: "0 0 6px 0" }}>
+                        Weekly Holiday: <strong style={{ color: (previewStore.weekly_holidays && previewStore.weekly_holidays.length > 0) || (previewStore.weekly_holiday && previewStore.weekly_holiday !== "None") ? "#dc2626" : "#059669" }}>
+                          {previewStore.weekly_holidays && previewStore.weekly_holidays.length > 0
+                            ? previewStore.weekly_holidays.join(", ")
+                            : (previewStore.weekly_holiday || "None (Open 7 Days)")}
+                        </strong>
+                      </p>
+
+                      {/* Daywise Breakdown if available */}
+                      {previewStore.daywise_hours && (
+                        <div style={{ marginTop: "8px", borderTop: "1px dashed #ebdbe2", paddingTop: "8px" }}>
+                          <span style={{ fontSize: "11px", fontWeight: 700, color: "#8a7b81", display: "block", marginBottom: "4px" }}>
+                            DAY-BY-DAY SCHEDULE:
+                          </span>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "4px" }}>
+                            {DAYS_OF_WEEK.map((d) => {
+                              const sched = (previewStore.daywise_hours as any)?.[d];
+                              if (!sched) return null;
+                              return (
+                                <div
+                                  key={d}
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    fontSize: "11px",
+                                    padding: "3px 6px",
+                                    borderRadius: "4px",
+                                    backgroundColor: sched.is_closed ? "#fee2e2" : "#f0fdf4",
+                                    color: sched.is_closed ? "#991b1b" : "#166534"
+                                  }}
+                                >
+                                  <strong>{d.slice(0, 3)}:</strong>
+                                  <span>{sched.is_closed ? "Off" : `${sched.open} - ${sched.close}`}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
                       )}
                     </div>
-                  </div>
 
-                  {/* Card 3: Operating Hours & Weekly Off with Daywise breakdown */}
-                  <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px", gridColumn: "span 1" }}>
-                    <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                      <Clock size={14} style={{ color: "#059669" }} /> Opening Hours & Weekly Off
-                    </span>
-                    <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 4px 0" }}>
-                      Standard: <strong>{previewStore.opening_hours || "10:00 AM - 08:30 PM"}</strong>
-                    </p>
-                    <p style={{ fontSize: "12.5px", color: "#7a636f", margin: "0 0 6px 0" }}>
-                      Weekly Holiday: <strong style={{ color: (previewStore.weekly_holidays && previewStore.weekly_holidays.length > 0) || (previewStore.weekly_holiday && previewStore.weekly_holiday !== "None") ? "#dc2626" : "#059669" }}>
-                        {previewStore.weekly_holidays && previewStore.weekly_holidays.length > 0
-                          ? previewStore.weekly_holidays.join(", ")
-                          : (previewStore.weekly_holiday || "None (Open 7 Days)")}
-                      </strong>
-                    </p>
-
-                    {/* Daywise Breakdown if available */}
-                    {previewStore.daywise_hours && (
-                      <div style={{ marginTop: "8px", borderTop: "1px dashed #ebdbe2", paddingTop: "8px" }}>
-                        <span style={{ fontSize: "11px", fontWeight: 700, color: "#8a7b81", display: "block", marginBottom: "4px" }}>
-                          DAY-BY-DAY SCHEDULE:
+                    {/* Card 4: Social Network Profiles */}
+                    {previewStore.social_links && Object.keys(previewStore.social_links).length > 0 && (
+                      <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
+                        <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                          <Share2 size={14} style={{ color: "#7c3aed" }} /> Social Network Channels
                         </span>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "4px" }}>
-                          {DAYS_OF_WEEK.map((d) => {
-                            const sched = (previewStore.daywise_hours as any)?.[d];
-                            if (!sched) return null;
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                          {Object.entries(previewStore.social_links).map(([platform, url]) => {
+                            if (!url) return null;
+                            const found = SOCIAL_PLATFORMS.find((p) => p.id === platform);
+                            const name = found ? found.name : platform;
                             return (
-                              <div
-                                key={d}
+                              <a
+                                key={platform}
+                                href={url.startsWith("http") ? url : `https://${url}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  fontSize: "11px",
-                                  padding: "3px 6px",
-                                  borderRadius: "4px",
-                                  backgroundColor: sched.is_closed ? "#fee2e2" : "#f0fdf4",
-                                  color: sched.is_closed ? "#991b1b" : "#166534"
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "5px",
+                                  padding: "4px 8px",
+                                  borderRadius: "6px",
+                                  backgroundColor: "#ffffff",
+                                  border: "1px solid #ebdbe2",
+                                  fontSize: "11.5px",
+                                  fontWeight: 600,
+                                  color: "#4C0F2D",
+                                  textDecoration: "none",
+                                  boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
                                 }}
                               >
-                                <strong>{d.slice(0, 3)}:</strong>
-                                <span>{sched.is_closed ? "Off" : `${sched.open} - ${sched.close}`}</span>
-                              </div>
+                                {getSocialIconPreview(platform)}
+                                <span>{name}</span>
+                              </a>
                             );
                           })}
                         </div>
@@ -2737,150 +2777,108 @@ export function StoreListingsManagement() {
                     )}
                   </div>
 
-                  {/* Card 4: Social Network Profiles */}
-                  {previewStore.social_links && Object.keys(previewStore.social_links).length > 0 && (
-                    <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
-                      <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-                        <Share2 size={14} style={{ color: "#7c3aed" }} /> Social Network Channels
-                      </span>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                        {Object.entries(previewStore.social_links).map(([platform, url]) => {
-                          if (!url) return null;
-                          const found = SOCIAL_PLATFORMS.find((p) => p.id === platform);
-                          const name = found ? found.name : platform;
-                          return (
-                            <a
-                              key={platform}
-                              href={url.startsWith("http") ? url : `https://${url}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "5px",
-                                padding: "4px 8px",
-                                borderRadius: "6px",
-                                backgroundColor: "#ffffff",
-                                border: "1px solid #ebdbe2",
-                                fontSize: "11.5px",
-                                fontWeight: 600,
-                                color: "#4C0F2D",
-                                textDecoration: "none",
-                                boxShadow: "0 1px 3px rgba(0,0,0,0.04)"
-                              }}
-                            >
-                              {getSocialIconPreview(platform)}
-                              <span>{name}</span>
-                            </a>
-                          );
-                        })}
+                  {/* Photo Gallery Grid */}
+                  {previewStore.gallery && previewStore.gallery.length > 0 && (
+                    <div style={{ marginBottom: "24px" }}>
+                      <h4 style={{ fontFamily: "var(--sl-font-heading)", fontSize: "16px", color: "#4C0F2D", margin: "0 0 10px 0" }}>
+                        Showroom & Collection Gallery
+                      </h4>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
+                        {previewStore.gallery.map((g) => (
+                          <div key={g.id} style={{ height: "90px", borderRadius: "12px", overflow: "hidden", border: "1px solid #ebdbe2" }}>
+                            <img src={g.image_url} alt="Gallery item" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* Photo Gallery Grid */}
-                {previewStore.gallery && previewStore.gallery.length > 0 && (
-                  <div style={{ marginBottom: "24px" }}>
-                    <h4 style={{ fontFamily: "var(--sl-font-heading)", fontSize: "16px", color: "#4C0F2D", margin: "0 0 10px 0" }}>
-                      Showroom & Collection Gallery
-                    </h4>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
-                      {previewStore.gallery.map((g) => (
-                        <div key={g.id} style={{ height: "90px", borderRadius: "12px", overflow: "hidden", border: "1px solid #ebdbe2" }}>
-                          <img src={g.image_url} alt="Gallery item" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                  {/* Active Offers (Expired Offers are Automatically Hidden in Customer View) */}
+                  {previewStore.offers && previewStore.offers.length > 0 && (
+                    <div style={{ marginBottom: "24px" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                        <h4 style={{ fontFamily: "var(--sl-font-heading)", fontSize: "16px", color: "#4C0F2D", margin: 0 }}>
+                          Active Showroom Offers
+                        </h4>
+                        <span style={{ fontSize: "11px", color: "#8a7b81" }}>
+                          Confirmed with Jeweller
+                        </span>
+                      </div>
 
-                {/* Active Offers (Expired Offers are Automatically Hidden in Customer View) */}
-                {previewStore.offers && previewStore.offers.length > 0 && (
-                  <div style={{ marginBottom: "24px" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
-                      <h4 style={{ fontFamily: "var(--sl-font-heading)", fontSize: "16px", color: "#4C0F2D", margin: 0 }}>
-                        Active Showroom Offers
-                      </h4>
-                      <span style={{ fontSize: "11px", color: "#8a7b81" }}>
-                        Confirmed with Jeweller
-                      </span>
-                    </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      {previewStore.offers
-                        .filter((o) => !o.end_date || new Date(o.end_date) >= new Date())
-                        .map((offer) => (
-                          <div
-                            key={offer.id}
-                            style={{
-                              backgroundColor: "#ffffff",
-                              border: "1px solid #ebdbe2",
-                              borderRadius: "14px",
-                              padding: "16px",
-                              display: "flex",
-                              alignItems: "flex-start",
-                              justifyContent: "space-between",
-                              boxShadow: "0 2px 8px rgba(76, 15, 45, 0.04)"
-                            }}
-                          >
-                            <div>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <span style={{ fontWeight: 800, fontSize: "14px", color: "#4C0F2D" }}>{offer.title}</span>
-                                <span className="sl-offer-meta-badge active">OFFER LIVE</span>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                        {previewStore.offers
+                          .filter((o) => !o.end_date || new Date(o.end_date) >= new Date())
+                          .map((offer) => (
+                            <div
+                              key={offer.id}
+                              style={{
+                                backgroundColor: "#ffffff",
+                                border: "1px solid #ebdbe2",
+                                borderRadius: "14px",
+                                padding: "16px",
+                                display: "flex",
+                                alignItems: "flex-start",
+                                justifyContent: "space-between",
+                                boxShadow: "0 2px 8px rgba(76, 15, 45, 0.04)"
+                              }}
+                            >
+                              <div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                  <span style={{ fontWeight: 800, fontSize: "14px", color: "#4C0F2D" }}>{offer.title}</span>
+                                  <span className="sl-offer-meta-badge active">OFFER LIVE</span>
+                                </div>
+                                {offer.description && (
+                                  <p style={{ fontSize: "13px", color: "#47303d", margin: "4px 0" }}>{offer.description}</p>
+                                )}
+                                <div style={{ fontSize: "11.5px", color: "#8a7b81", display: "flex", gap: "14px", marginTop: "6px" }}>
+                                  {offer.end_date && <span>📅 Valid Until: <strong>{new Date(offer.end_date).toLocaleDateString()}</strong></span>}
+                                  {offer.terms && <span>📜 Terms: {offer.terms}</span>}
+                                </div>
                               </div>
-                              {offer.description && (
-                                <p style={{ fontSize: "13px", color: "#47303d", margin: "4px 0" }}>{offer.description}</p>
-                              )}
-                              <div style={{ fontSize: "11.5px", color: "#8a7b81", display: "flex", gap: "14px", marginTop: "6px" }}>
-                                {offer.end_date && <span>📅 Valid Until: <strong>{new Date(offer.end_date).toLocaleDateString()}</strong></span>}
-                                {offer.terms && <span>📜 Terms: {offer.terms}</span>}
-                              </div>
+                              <Tag size={20} style={{ color: "#d4af37", flexShrink: 0 }} />
                             </div>
-                            <Tag size={20} style={{ color: "#d4af37", flexShrink: 0 }} />
-                          </div>
-                        ))}
+                          ))}
+                      </div>
                     </div>
+                  )}
+
+                  {/* ── MANDATORY LISTING DISCLAIMER ── */}
+                  <div className="sl-disclaimer-card">
+                    <div className="sl-disclaimer-header">
+                      <AlertCircle size={16} />
+                      <span>Listing Disclaimer</span>
+                    </div>
+                    <p style={{ margin: 0, fontStyle: "italic" }}>
+                      “JewellersParadise is a jewellery offers discovery platform. Purchases and enquiries are handled directly by the jeweller. Please confirm offer availability and terms with the store.”
+                    </p>
                   </div>
-                )}
 
-                {/* ── MANDATORY LISTING DISCLAIMER ── */}
-                <div className="sl-disclaimer-card">
-                  <div className="sl-disclaimer-header">
-                    <AlertCircle size={16} />
-                    <span>Listing Disclaimer</span>
+                  {/* Secondary Customer Links */}
+                  <div className="sl-secondary-links-row">
+                    <button
+                      type="button"
+                      onClick={() => setIsClaimModalOpen(true)}
+                      className="sl-text-link"
+                      style={{ background: "none", border: "none", padding: 0 }}
+                    >
+                      Own this store? Claim or update this listing
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsReportModalOpen(true)}
+                      className="sl-text-link muted"
+                      style={{ background: "none", border: "none", padding: 0 }}
+                    >
+                      Report incorrect details
+                    </button>
                   </div>
-                  <p style={{ margin: 0, fontStyle: "italic" }}>
-                    “JewellersParadise is a jewellery offers discovery platform. Purchases and enquiries are handled directly by the jeweller. Please confirm offer availability and terms with the store.”
-                  </p>
-                </div>
-
-                {/* Secondary Customer Links */}
-                <div className="sl-secondary-links-row">
-                  <button
-                    type="button"
-                    onClick={() => setIsClaimModalOpen(true)}
-                    className="sl-text-link"
-                    style={{ background: "none", border: "none", padding: 0 }}
-                  >
-                    Own this store? Claim or update this listing
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsReportModalOpen(true)}
-                    className="sl-text-link muted"
-                    style={{ background: "none", border: "none", padding: 0 }}
-                  >
-                    Report incorrect details
-                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
       {/* ═══════════════════════════════════════════════════════════
           MODAL: Customer "Claim or Update This Store" Dialog
