@@ -1172,20 +1172,20 @@ export function StoreListingsManagement() {
             <table className="sl-table">
               <thead>
                 <tr>
-                  <th style={{ minWidth: "170px" }}>Store Identity</th>
-                  <th style={{ minWidth: "115px" }}>Location</th>
-                  <th style={{ minWidth: "85px" }}>Categories</th>
-                  <th style={{ minWidth: "90px" }}>Verification</th>
-                  <th style={{ minWidth: "75px" }}>Status</th>
-                  <th style={{ minWidth: "95px", whiteSpace: "nowrap" }}>Last Updated</th>
-                  <th className="sl-col-actions" style={{ minWidth: "124px", width: "124px", textAlign: "right" }}>Actions</th>
+                  <th className="sl-col-identity">Store Identity</th>
+                  <th className="sl-col-location">Location</th>
+                  <th className="sl-col-categories">Categories</th>
+                  <th className="sl-col-verification">Verification</th>
+                  <th className="sl-col-status">Status</th>
+                  <th className="sl-col-updated">Last Updated</th>
+                  <th className="sl-col-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredStores.map((store) => (
                   <tr key={store.id}>
                     {/* Store Identity */}
-                    <td>
+                    <td className="sl-col-identity">
                       <div className="sl-store-cell">
                         <div
                           className="sl-store-avatar"
@@ -1259,7 +1259,7 @@ export function StoreListingsManagement() {
                     </td>
 
                     {/* Location */}
-                    <td>
+                    <td className="sl-col-location">
                       {store.store_type === "ONLINE" ? (
                         <div>
                           <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: 700, color: "#1e40af", fontSize: "11.5px", backgroundColor: "#eff6ff", padding: "2px 7px", borderRadius: "5px", border: "1px solid #bfdbfe" }}>
@@ -1277,7 +1277,7 @@ export function StoreListingsManagement() {
                           <div style={{ fontWeight: 700, color: "#2d161d", fontSize: "13px" }}>
                             {store.city || ""}{store.city && store.state ? ", " : ""}{store.state || ""}
                           </div>
-                          <div style={{ fontSize: "11px", color: "#8a7b81", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <div style={{ fontSize: "11px", color: "#8a7b81", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {store.address || "-"}
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
@@ -1303,7 +1303,7 @@ export function StoreListingsManagement() {
                     </td>
 
                     {/* Categories */}
-                    <td>
+                    <td className="sl-col-categories">
                       <div className="sl-cat-badge-wrap">
                         {store.categories?.slice(0, 3).map((c, idx) => (
                           <span key={idx} className="sl-cat-badge">
@@ -1319,7 +1319,7 @@ export function StoreListingsManagement() {
                     </td>
 
                     {/* Verification Toggle */}
-                    <td>
+                    <td className="sl-col-verification">
                       <button
                         onClick={() => handleToggleVerification(store)}
                         className={`sl-badge-toggle ${store.is_verified ? "verified" : "unverified"}`}
@@ -1331,7 +1331,7 @@ export function StoreListingsManagement() {
                     </td>
 
                     {/* Status Toggle */}
-                    <td>
+                    <td className="sl-col-status">
                       <button
                         onClick={() => handleTogglePublish(store)}
                         className={`sl-badge-toggle ${
@@ -1347,7 +1347,7 @@ export function StoreListingsManagement() {
                     </td>
 
                     {/* Last Updated Badge */}
-                    <td>
+                    <td className="sl-col-updated">
                       <div className="sl-updated-badge" title={`Last updated on ${store.updated_at ? formatDateDMY(store.updated_at) : "Recently"}`}>
                         <Calendar size={11} className="sl-updated-icon" />
                         <span>{store.updated_at ? formatDateDMY(store.updated_at) : "Recently"}</span>

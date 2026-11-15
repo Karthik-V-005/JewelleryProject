@@ -612,22 +612,43 @@
   text-align: left;
 }
 
-.sl-table th:first-child,
-.sl-table td:first-child {
-  background-color: #ffffff;
+/* Table Column Proportions & Alignment - Balanced Layout */
+.sl-col-identity {
+  width: 27%;
+  min-width: 190px;
 }
 
-.sl-table thead th:first-child {
-  background-color: #fafbfc;
+.sl-col-location {
+  width: 17%;
+  min-width: 130px;
 }
 
-.sl-table tbody tr:hover td:first-child {
-  background-color: #fdfafc;
+.sl-col-categories {
+  width: 18%;
+  min-width: 125px;
+}
+
+.sl-col-verification {
+  width: 13%;
+  min-width: 110px;
+}
+
+.sl-col-status {
+  width: 8%;
+  min-width: 80px;
+}
+
+.sl-col-updated {
+  width: 9%;
+  min-width: 95px;
+  white-space: nowrap;
 }
 
 /* Actions Column */
 .sl-table th.sl-col-actions,
 .sl-table td.sl-col-actions {
+  width: 8%;
+  min-width: 124px;
   text-align: right;
   border-left: none !important;
   box-shadow: none !important;
