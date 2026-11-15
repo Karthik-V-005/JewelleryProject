@@ -19,7 +19,7 @@
 
 .sl-container {
   width: 100%;
-  max-width: 1400px;
+  max-width: 100%;
   margin: 0 auto;
   font-family: var(--sl-font-body);
   color: var(--sl-text-primary);
@@ -623,6 +623,31 @@
 
 .sl-table tbody tr:hover td:first-child {
   background-color: #fdfafc;
+}
+
+/* Sticky Actions Column - Stays Fixed on the Right Edge */
+.sl-table th.sl-col-actions,
+.sl-table td.sl-col-actions {
+  position: sticky;
+  right: 0;
+  z-index: 5;
+  box-shadow: -4px 0 10px -2px rgba(76, 15, 45, 0.08);
+  min-width: 170px;
+  width: 170px;
+  text-align: right;
+}
+
+.sl-table thead th.sl-col-actions {
+  background-color: #fafbfc;
+  z-index: 6;
+}
+
+.sl-table td.sl-col-actions {
+  background-color: #ffffff;
+}
+
+.sl-table tbody tr:hover td.sl-col-actions {
+  background-color: #fef9fb;
 }
 
 .sl-table thead tr {

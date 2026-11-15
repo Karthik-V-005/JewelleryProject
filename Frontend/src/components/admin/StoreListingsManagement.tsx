@@ -1178,7 +1178,7 @@ export function StoreListingsManagement() {
                   <th style={{ minWidth: "115px" }}>Verification</th>
                   <th style={{ minWidth: "95px" }}>Status</th>
                   <th style={{ minWidth: "85px" }}>Last Updated</th>
-                  <th style={{ minWidth: "125px", textAlign: "right" }}>Actions</th>
+                  <th className="sl-col-actions" style={{ minWidth: "170px", width: "170px", textAlign: "right" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1352,7 +1352,7 @@ export function StoreListingsManagement() {
                     </td>
 
                     {/* Row Actions */}
-                    <td>
+                    <td className="sl-col-actions">
                       <div className="sl-row-actions">
                         <button
                           onClick={() => setPreviewStore(store)}
