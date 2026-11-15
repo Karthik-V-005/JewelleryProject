@@ -186,8 +186,10 @@ export function StoreListingsManagement() {
   const [formStoreName, setFormStoreName] = useState("");
   const [formSlug, setFormSlug] = useState("");
   const [formDescription, setFormDescription] = useState("");
+  const [availableCategories, setAvailableCategories] = useState<string[]>(PRESET_CATEGORIES);
   const [formCategories, setFormCategories] = useState<string[]>([]);
   const [customCategoryInput, setCustomCategoryInput] = useState("");
+  const [formStoreType, setFormStoreType] = useState<"OFFLINE" | "ONLINE">("OFFLINE");
 
   const [formAddress, setFormAddress] = useState("");
   const [formCity, setFormCity] = useState("");
@@ -491,7 +493,9 @@ export function StoreListingsManagement() {
     setFormStoreName("");
     setFormSlug("");
     setFormDescription("");
+    setAvailableCategories(PRESET_CATEGORIES);
     setFormCategories(["Gold", "Diamond"]);
+    setFormStoreType("OFFLINE");
     setFormAddress("");
     setFormCity("");
     setFormState("");
@@ -538,7 +542,10 @@ export function StoreListingsManagement() {
       setFormStoreName(s.store_name || "");
       setFormSlug(s.slug || "");
       setFormDescription(s.short_description || "");
-      setFormCategories(s.categories || []);
+      const storeCats = s.categories || [];
+      setAvailableCategories(Array.from(new Set([...PRESET_CATEGORIES, ...storeCats])));
+      setFormCategories(storeCats);
+      setFormStoreType((s.store_type as any) === "ONLINE" ? "ONLINE" : "OFFLINE");
       setFormAddress(s.address || "");
       setFormCity(s.city || "");
       setFormState(s.state || "");
@@ -635,7 +642,7 @@ export function StoreListingsManagement() {
     }
   };
 
-  /* ─── Category Toggle ─── */
+  /* ─── Category Toggle & Custom Category Management ─── */
   const toggleCategory = (cat: string) => {
     setFormCategories((prev) =>
       prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
@@ -643,19 +650,44 @@ export function StoreListingsManagement() {
   };
 
   const handleAddCustomCategory = () => {
-    if (customCategoryInput.trim() && !formCategories.includes(customCategoryInput.trim())) {
-      setFormCategories((prev) => [...prev, customCategoryInput.trim()]);
-      setCustomCategoryInput("");
+    const trimmed = customCategoryInput.trim();
+    if (!trimmed) return;
+
+    // Check if category already exists in available categories (case-insensitive)
+    const existing = availableCategories.find(
+      (c) => c.toLowerCase() === trimmed.toLowerCase()
+    );
+    const categoryToAdd = existing || trimmed;
+
+    if (!existing) {
+      setAvailableCategories((prev) => [...prev, trimmed]);
     }
+
+    if (!formCategories.includes(categoryToAdd)) {
+      setFormCategories((prev) => [...prev, categoryToAdd]);
+    }
+
+    setCustomCategoryInput("");
+    toast.success(`Category "${trimmed}" added!`);
+  };
+
+  const handleRemoveCustomCategory = (catToRemove: string) => {
+    setAvailableCategories((prev) => prev.filter((c) => c !== catToRemove));
+    setFormCategories((prev) => prev.filter((c) => c !== catToRemove));
+    toast.info(`Category "${catToRemove}" removed`);
   };
 
   /* ─── Save Store (Create or Update) ─── */
   const handleSaveStore = async (targetStatus?: "DRAFT" | "PUBLISHED") => {
     if (!formStoreName.trim()) return toast.error("Store Name is required");
-    if (!formAddress.trim()) return toast.error("Address is required");
-    if (!formCity.trim()) return toast.error("City is required");
-    if (!formState.trim()) return toast.error("State is required");
-    if (!formPincode.trim()) return toast.error("PIN code is required");
+    
+    // Address validation based on Store Type
+    if (formStoreType === "OFFLINE") {
+      if (!formAddress.trim()) return toast.error("Full Street Address is required for offline showrooms");
+      if (!formCity.trim()) return toast.error("City is required");
+      if (!formState.trim()) return toast.error("State is required");
+    }
+    // PIN code is optional for all time per explicit client instruction
     if (!formPhone.trim()) return toast.error("Business Phone is required");
 
     setIsSubmitting(true);
@@ -664,11 +696,12 @@ export function StoreListingsManagement() {
     if (formSlug.trim()) fd.append("slug", formSlug.trim());
     fd.append("shortDescription", formDescription.trim());
     fd.append("categories", JSON.stringify(formCategories));
-    fd.append("address", formAddress.trim());
-    fd.append("city", formCity.trim());
-    fd.append("state", formState.trim());
+    fd.append("storeType", formStoreType);
+    fd.append("address", formAddress.trim() || (formStoreType === "ONLINE" ? "Online Store" : ""));
+    fd.append("city", formCity.trim() || (formStoreType === "ONLINE" ? "Online" : ""));
+    fd.append("state", formState.trim() || (formStoreType === "ONLINE" ? "Online" : ""));
     fd.append("country", formCountry.trim() || "India");
-    fd.append("pincode", formPincode.trim());
+    if (formPincode.trim()) fd.append("pincode", formPincode.trim());
     if (formMapsLink.trim()) fd.append("googleMapsLink", formMapsLink.trim());
 
     // Clean multiple phones
@@ -1227,28 +1260,46 @@ export function StoreListingsManagement() {
 
                     {/* Location */}
                     <td>
-                      <div style={{ fontWeight: 700, color: "#2d161d", fontSize: "13px" }}>
-                        {store.city}, {store.state}
-                      </div>
-                      <div style={{ fontSize: "11px", color: "#8a7b81", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {store.address}
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
-                        <span style={{ fontSize: "10px", backgroundColor: "#f3f4f6", color: "#4b5563", padding: "1px 5px", borderRadius: "4px" }}>
-                          PIN: {store.pincode}
-                        </span>
-                        {store.google_maps_link && (
-                          <a
-                            href={store.google_maps_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{ fontSize: "11px", color: "#dc2626", display: "inline-flex", alignItems: "center", gap: "2px", fontWeight: 600, textDecoration: "none" }}
-                            title="View on Google Maps"
-                          >
-                            <MapPin size={11} /> Directions
-                          </a>
-                        )}
-                      </div>
+                      {store.store_type === "ONLINE" ? (
+                        <div>
+                          <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontWeight: 700, color: "#1e40af", fontSize: "11.5px", backgroundColor: "#eff6ff", padding: "2px 7px", borderRadius: "5px", border: "1px solid #bfdbfe" }}>
+                            <Globe size={11} />
+                            <span>Online Store</span>
+                          </div>
+                          {store.city && store.city !== "Online" && (
+                            <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "3px" }}>
+                              {store.city}{store.state && store.state !== "Online" ? `, ${store.state}` : ""}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <div style={{ fontWeight: 700, color: "#2d161d", fontSize: "13px" }}>
+                            {store.city || ""}{store.city && store.state ? ", " : ""}{store.state || ""}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "#8a7b81", maxWidth: "180px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {store.address || "-"}
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+                            {store.pincode && (
+                              <span style={{ fontSize: "10px", backgroundColor: "#f3f4f6", color: "#4b5563", padding: "1px 5px", borderRadius: "4px" }}>
+                                PIN: {store.pincode}
+                              </span>
+                            )}
+                            {store.google_maps_link && (
+                              <a
+                                href={store.google_maps_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ fontSize: "11px", color: "#dc2626", display: "inline-flex", alignItems: "center", gap: "2px", fontWeight: 600, textDecoration: "none" }}
+                                title="View on Google Maps"
+                              >
+                                <MapPin size={11} /> Directions
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </td>
 
                     {/* Categories */}
@@ -1453,10 +1504,18 @@ export function StoreListingsManagement() {
                 </div>
 
                 <div className="sl-field">
-                  <label className="sl-label">Jewellery Categories</label>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <label className="sl-label" style={{ marginBottom: 0 }}>
+                      Jewellery Categories <span className="opt">({formCategories.length} selected)</span>
+                    </label>
+                    <span style={{ fontSize: "11px", color: "#8a7b81" }}>
+                      Click pill to select/deselect
+                    </span>
+                  </div>
                   <div className="sl-cat-select-wrap">
-                    {PRESET_CATEGORIES.map((cat) => {
+                    {availableCategories.map((cat) => {
                       const selected = formCategories.includes(cat);
+                      const isCustom = !PRESET_CATEGORIES.includes(cat);
                       return (
                         <button
                           key={cat}
@@ -1468,18 +1527,44 @@ export function StoreListingsManagement() {
                             borderColor: selected ? "#4C0F2D" : "#dfcdd6",
                             color: selected ? "#ffffff" : "#4a323d",
                             boxShadow: selected ? "0 3px 10px rgba(76, 15, 45, 0.3)" : "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px"
                           }}
                         >
                           {selected && <Check size={13} style={{ color: "#fef08a" }} />}
                           <span style={{ color: selected ? "#ffffff" : "#4a323d", fontWeight: selected ? 700 : 500 }}>
                             {cat}
                           </span>
+                          {isCustom && (
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveCustomCategory(cat);
+                              }}
+                              title={`Remove "${cat}" category`}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "16px",
+                                height: "16px",
+                                borderRadius: "50%",
+                                backgroundColor: selected ? "rgba(255, 255, 255, 0.25)" : "#f3e8ee",
+                                color: selected ? "#ffffff" : "#7b1a4a",
+                                marginLeft: "2px",
+                                cursor: "pointer"
+                              }}
+                            >
+                              <X size={11} />
+                            </span>
+                          )}
                         </button>
                       );
                     })}
                   </div>
 
-                  <div style={{ display: "flex", gap: "8px", maxWidth: "340px" }}>
+                  <div style={{ display: "flex", gap: "8px", maxWidth: "360px", marginTop: "8px" }}>
                     <input
                       type="text"
                       placeholder="Add custom category..."
@@ -1498,9 +1583,9 @@ export function StoreListingsManagement() {
                       type="button"
                       onClick={handleAddCustomCategory}
                       className="sl-btn-secondary"
-                      style={{ padding: "6px 14px", height: "36px" }}
+                      style={{ padding: "6px 14px", height: "36px", whiteSpace: "nowrap" }}
                     >
-                      Add
+                      + Add
                     </button>
                   </div>
                 </div>
@@ -1614,22 +1699,105 @@ export function StoreListingsManagement() {
                 </div>
               </div>
 
-              {/* SECTION 3: Address, Location & Google Maps Link */}
+              {/* SECTION 3: Store Type & Location Details */}
               <div className="sl-form-section">
                 <div className="sl-section-heading">
                   <span className="sl-section-title">
                     <MapPin size={16} style={{ color: "#4C0F2D" }} />
-                    3. Address, Location & Google Maps Link
+                    3. Store Type, Address & Location Details
                   </span>
+                </div>
+
+                {/* Store Type Selection: Offline Showroom vs Online Store */}
+                <div className="sl-field" style={{ marginBottom: "18px" }}>
+                  <label className="sl-label" style={{ fontSize: "13px", fontWeight: 700, color: "#4C0F2D", marginBottom: "8px" }}>
+                    Store Operating Model / Store Type <span className="req">*</span>
+                  </label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "12px" }}>
+                    {/* Offline Showroom */}
+                    <div
+                      onClick={() => setFormStoreType("OFFLINE")}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "10px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        border: formStoreType === "OFFLINE" ? "2px solid #4C0F2D" : "1.5px solid #dfcdd6",
+                        backgroundColor: formStoreType === "OFFLINE" ? "#fbf0f5" : "#ffffff",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        id="storeType-offline"
+                        name="storeType"
+                        checked={formStoreType === "OFFLINE"}
+                        onChange={() => setFormStoreType("OFFLINE")}
+                        style={{ marginTop: "3px", accentColor: "#4C0F2D" }}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "13px", color: formStoreType === "OFFLINE" ? "#4C0F2D" : "#3b202c" }}>
+                          🏪 Offline Showroom (Physical Store)
+                        </div>
+                        <div style={{ fontSize: "11.5px", color: "#7a636f", marginTop: "2px" }}>
+                          Walk-in showroom or boutique with physical street address and directions.
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Online Store */}
+                    <div
+                      onClick={() => setFormStoreType("ONLINE")}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: "10px",
+                        padding: "12px 14px",
+                        borderRadius: "12px",
+                        border: formStoreType === "ONLINE" ? "2px solid #1e40af" : "1.5px solid #dfcdd6",
+                        backgroundColor: formStoreType === "ONLINE" ? "#eff6ff" : "#ffffff",
+                        cursor: "pointer",
+                        transition: "all 0.2s ease"
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        id="storeType-online"
+                        name="storeType"
+                        checked={formStoreType === "ONLINE"}
+                        onChange={() => setFormStoreType("ONLINE")}
+                        style={{ marginTop: "3px", accentColor: "#1e40af" }}
+                      />
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "13px", color: formStoreType === "ONLINE" ? "#1e40af" : "#3b202c" }}>
+                          🌐 Online Store (Virtual / E-Commerce)
+                        </div>
+                        <div style={{ fontSize: "11.5px", color: "#64748b", marginTop: "2px" }}>
+                          Digital store, Instagram/WhatsApp catalogue. Street address is optional.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {formStoreType === "ONLINE" && (
+                    <div style={{ marginTop: "10px", padding: "10px 14px", borderRadius: "8px", backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0", fontSize: "12px", color: "#166534", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <Globe size={15} style={{ color: "#16a34a", flexShrink: 0 }} />
+                      <span>
+                        <strong>Online Store Mode:</strong> Street address, city, and Google Maps links are optional. Customers on the website will see <strong>"Online Store"</strong> in the address section.
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="sl-field">
                   <label className="sl-label">
-                    Full Street Address <span className="req">*</span>
+                    Full Street Address {formStoreType === "OFFLINE" ? <span className="req">*</span> : <span className="opt">(optional for online store)</span>}
                   </label>
                   <textarea
                     rows={2}
-                    placeholder="Shop/Showroom No., Commercial Complex, Main Road..."
+                    placeholder={formStoreType === "ONLINE" ? "Optional showroom or corporate office address..." : "Shop/Showroom No., Commercial Complex, Main Road..."}
                     value={formAddress}
                     onChange={(e) => setFormAddress(e.target.value)}
                     className="sl-textarea"
@@ -1639,11 +1807,11 @@ export function StoreListingsManagement() {
                 <div className="sl-grid-2">
                   <div className="sl-field">
                     <label className="sl-label">
-                      City <span className="req">*</span>
+                      City {formStoreType === "OFFLINE" ? <span className="req">*</span> : <span className="opt">(optional)</span>}
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Coimbatore"
+                      placeholder={formStoreType === "ONLINE" ? "e.g. Coimbatore (or leave blank)" : "e.g. Coimbatore"}
                       value={formCity}
                       onChange={(e) => setFormCity(e.target.value)}
                       className="sl-input"
@@ -1652,11 +1820,11 @@ export function StoreListingsManagement() {
 
                   <div className="sl-field">
                     <label className="sl-label">
-                      State <span className="req">*</span>
+                      State {formStoreType === "OFFLINE" ? <span className="req">*</span> : <span className="opt">(optional)</span>}
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Tamil Nadu"
+                      placeholder={formStoreType === "ONLINE" ? "e.g. Tamil Nadu (or leave blank)" : "e.g. Tamil Nadu"}
                       value={formState}
                       onChange={(e) => setFormState(e.target.value)}
                       className="sl-input"
@@ -1676,11 +1844,11 @@ export function StoreListingsManagement() {
 
                   <div className="sl-field">
                     <label className="sl-label">
-                      PIN Code <span className="req">*</span>
+                      PIN Code <span className="opt">(optional)</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. 641001"
+                      placeholder="e.g. 641001 (optional)"
                       value={formPincode}
                       onChange={(e) => setFormPincode(e.target.value)}
                       className="sl-input"
@@ -1690,7 +1858,7 @@ export function StoreListingsManagement() {
 
                 <div className="sl-field">
                   <label className="sl-label">
-                    Google Maps Link <span className="opt">(powers "Get Directions" customer CTA)</span>
+                    Google Maps Link <span className="opt">({formStoreType === "ONLINE" ? "optional" : "powers 'Get Directions' customer CTA"})</span>
                   </label>
                   <input
                     type="url"
@@ -2336,10 +2504,22 @@ export function StoreListingsManagement() {
                           )}
                         </div>
                         <p className="sl-preview-loc-text">
-                          <MapPin size={14} style={{ color: "#dc2626", flexShrink: 0 }} />
-                          <span>
-                            <strong>{previewStore.address}</strong> • {previewStore.city}, {previewStore.state}, {previewStore.country || "India"} {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
-                          </span>
+                          {previewStore.store_type === "ONLINE" ? (
+                            <>
+                              <Globe size={14} style={{ color: "#2563eb", flexShrink: 0 }} />
+                              <span>
+                                <strong>Online Store</strong>
+                                {previewStore.city && previewStore.city !== "Online" ? ` • Based in ${previewStore.city}, ${previewStore.state || ""}` : ` • Delivering Pan-${previewStore.country || "India"}`}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <MapPin size={14} style={{ color: "#dc2626", flexShrink: 0 }} />
+                              <span>
+                                <strong>{previewStore.address}</strong> • {previewStore.city}, {previewStore.state}, {previewStore.country || "India"} {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
+                              </span>
+                            </>
+                          )}
                         </p>
                         {previewStore.categories && previewStore.categories.length > 0 && (
                           <div className="sl-preview-cats-wrap">
@@ -2436,14 +2616,35 @@ export function StoreListingsManagement() {
                   {/* Card 1: Address & Country */}
                   <div style={{ backgroundColor: "#fdfbfc", border: "1px solid #ebdbe2", borderRadius: "12px", padding: "14px" }}>
                     <span style={{ fontWeight: 800, fontSize: "12px", color: "#4C0F2D", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-                      <MapPin size={14} style={{ color: "#dc2626" }} /> Showroom Location
+                      {previewStore.store_type === "ONLINE" ? (
+                        <>
+                          <Globe size={14} style={{ color: "#2563eb" }} /> Store Presence
+                        </>
+                      ) : (
+                        <>
+                          <MapPin size={14} style={{ color: "#dc2626" }} /> Showroom Location
+                        </>
+                      )}
                     </span>
-                    <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 4px 0", fontWeight: 500 }}>
-                      {previewStore.address}
-                    </p>
-                    <p style={{ fontSize: "12.5px", color: "#7a636f", margin: 0 }}>
-                      <strong>{previewStore.city}</strong>, {previewStore.state}, <strong>{previewStore.country || "India"}</strong> {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
-                    </p>
+                    {previewStore.store_type === "ONLINE" ? (
+                      <>
+                        <p style={{ fontSize: "13px", color: "#1e3a8a", margin: "0 0 4px 0", fontWeight: 700 }}>
+                          🌐 Online Store
+                        </p>
+                        <p style={{ fontSize: "12.5px", color: "#7a636f", margin: 0 }}>
+                          {previewStore.city && previewStore.city !== "Online" ? `${previewStore.city}, ` : ""}{previewStore.state && previewStore.state !== "Online" ? `${previewStore.state}, ` : ""}{previewStore.country || "India"}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p style={{ fontSize: "13px", color: "#47303d", margin: "0 0 4px 0", fontWeight: 500 }}>
+                          {previewStore.address}
+                        </p>
+                        <p style={{ fontSize: "12.5px", color: "#7a636f", margin: 0 }}>
+                          <strong>{previewStore.city}</strong>, {previewStore.state}, <strong>{previewStore.country || "India"}</strong> {previewStore.pincode ? `- ${previewStore.pincode}` : ""}
+                        </p>
+                      </>
+                    )}
                   </div>
 
                   {/* Card 2: Contact Numbers & Email Addresses */}

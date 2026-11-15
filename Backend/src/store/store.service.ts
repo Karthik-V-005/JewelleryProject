@@ -126,6 +126,7 @@ export class StoreService {
       coverPhotoUrl = upload.secure_url;
     }
 
+    const storeType = (dto.storeType || 'OFFLINE').toUpperCase();
     const categories = this.parseCategories(dto.categories);
     const socialLinks = this.parseSocialLinks(dto.socialLinks);
     const isVerified =
@@ -155,15 +156,16 @@ export class StoreService {
       data: {
         slug,
         store_name: dto.storeName,
+        store_type: storeType,
         logo_url: logoUrl,
         cover_photo_url: coverPhotoUrl,
         short_description: dto.shortDescription || null,
         categories,
-        address: dto.address,
-        city: dto.city,
-        state: dto.state,
+        address: dto.address || (storeType === 'ONLINE' ? 'Online Store' : null),
+        city: dto.city || (storeType === 'ONLINE' ? 'Online' : null),
+        state: dto.state || (storeType === 'ONLINE' ? 'Online' : null),
         country,
-        pincode: dto.pincode,
+        pincode: dto.pincode || null,
         google_maps_link: dto.googleMapsLink || null,
         email,
         emails,
@@ -320,6 +322,10 @@ export class StoreService {
       slug = await this.generateUniqueSlug(`${dto.storeName}-${city}`, current.id);
     }
 
+    const storeType = dto.storeType
+      ? dto.storeType.toUpperCase()
+      : current.store_type || 'OFFLINE';
+
     const categories =
       dto.categories !== undefined
         ? this.parseCategories(dto.categories)
@@ -394,17 +400,18 @@ export class StoreService {
       data: {
         slug,
         ...(dto.storeName && { store_name: dto.storeName }),
+        store_type: storeType,
         logo_url: logoUrl,
         cover_photo_url: coverPhotoUrl,
         ...(dto.shortDescription !== undefined && {
           short_description: dto.shortDescription || null,
         }),
         categories,
-        ...(dto.address && { address: dto.address }),
-        ...(dto.city && { city: dto.city }),
-        ...(dto.state && { state: dto.state }),
+        ...(dto.address !== undefined ? { address: dto.address || (storeType === 'ONLINE' ? 'Online Store' : null) } : {}),
+        ...(dto.city !== undefined ? { city: dto.city || (storeType === 'ONLINE' ? 'Online' : null) } : {}),
+        ...(dto.state !== undefined ? { state: dto.state || (storeType === 'ONLINE' ? 'Online' : null) } : {}),
         country,
-        ...(dto.pincode && { pincode: dto.pincode }),
+        ...(dto.pincode !== undefined ? { pincode: dto.pincode || null } : {}),
         ...(dto.googleMapsLink !== undefined && {
           google_maps_link: dto.googleMapsLink || null,
         }),
@@ -640,6 +647,7 @@ export class StoreService {
           id: true,
           slug: true,
           store_name: true,
+          store_type: true,
           logo_url: true,
           cover_photo_url: true,
           short_description: true,

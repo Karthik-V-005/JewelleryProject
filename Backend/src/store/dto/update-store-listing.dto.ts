@@ -18,6 +18,10 @@ export class UpdateStoreListingDto {
 
   @IsString()
   @IsOptional()
+  storeType?: string;
+
+  @IsString()
+  @IsOptional()
   address?: string;
 
   @IsString()

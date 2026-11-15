@@ -17,24 +17,28 @@ export class CreateStoreListingDto {
   categories?: string[] | string;
 
   @IsString()
-  @IsNotEmpty()
-  address: string;
+  @IsOptional()
+  storeType?: string;
 
   @IsString()
-  @IsNotEmpty()
-  city: string;
+  @IsOptional()
+  address?: string;
 
   @IsString()
-  @IsNotEmpty()
-  state: string;
+  @IsOptional()
+  city?: string;
+
+  @IsString()
+  @IsOptional()
+  state?: string;
 
   @IsString()
   @IsOptional()
   country?: string;
 
   @IsString()
-  @IsNotEmpty()
-  pincode: string;
+  @IsOptional()
+  pincode?: string;
 
   @IsString()
   @IsOptional()

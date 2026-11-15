@@ -176,11 +176,12 @@ model StoreListing {
   cover_photo_url   String?
   short_description String?              @db.Text
   categories        String[]             @default([])
-  address           String               @db.Text
-  city              String               @db.VarChar(100)
-  state             String               @db.VarChar(100)
+  store_type        String               @default("OFFLINE") @db.VarChar(50)
+  address           String?              @db.Text
+  city              String?              @db.VarChar(100)
+  state             String?              @db.VarChar(100)
   country           String               @default("India") @db.VarChar(100)
-  pincode           String               @db.VarChar(10)
+  pincode           String?              @db.VarChar(20)
   google_maps_link  String?              @db.Text
   email             String?              @db.VarChar(255)
   emails            String[]             @default([])

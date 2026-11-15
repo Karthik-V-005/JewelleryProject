@@ -310,8 +310,18 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
                 </div>
 
                 <p className="pub-loc-text">
-                  <MapPin size={15} style={{ color: "#dc2626" }} />
-                  <strong>{store.address}</strong> • {store.city}, {store.state}, {store.country || "India"} {store.pincode ? `- ${store.pincode}` : ""}
+                  {store.store_type === "ONLINE" ? (
+                    <>
+                      <Globe size={15} style={{ color: "#2563eb", flexShrink: 0 }} />
+                      <strong>Online Store</strong>
+                      {store.city && store.city !== "Online" ? ` • Based in ${store.city}, ${store.state || ""}` : ` • Delivering Pan-${store.country || "India"}`}
+                    </>
+                  ) : (
+                    <>
+                      <MapPin size={15} style={{ color: "#dc2626", flexShrink: 0 }} />
+                      <strong>{store.address}</strong> • {store.city}, {store.state}, {store.country || "India"} {store.pincode ? `- ${store.pincode}` : ""}
+                    </>
+                  )}
                 </p>
 
                 {store.categories && store.categories.length > 0 && (
@@ -342,18 +352,20 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
               <span>Visit Website</span>
             </a>
 
-            <a
-              href={
-                store.google_maps_link ||
-                `https://maps.google.com/?q=${encodeURIComponent(`${store.store_name} ${store.address} ${store.city}`)}`
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pub-cta-btn directions"
-            >
-              <MapPin size={18} style={{ color: "#dc2626" }} />
-              <span>Get Directions</span>
-            </a>
+            {store.store_type !== "ONLINE" && (
+              <a
+                href={
+                  store.google_maps_link ||
+                  `https://maps.google.com/?q=${encodeURIComponent(`${store.store_name} ${store.address} ${store.city}`)}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="pub-cta-btn directions"
+              >
+                <MapPin size={18} style={{ color: "#dc2626" }} />
+                <span>Get Directions</span>
+              </a>
+            )}
 
             <a
               href={`tel:${store.phone}`}
