@@ -688,7 +688,7 @@ export function StoreListingsManagement() {
       if (!formState.trim()) return toast.error("State is required");
     }
     // PIN code is optional for all time per explicit client instruction
-    if (!formPhone.trim()) return toast.error("Business Phone is required");
+    // Business phone is optional for all (online and offline)
 
     setIsSubmitting(true);
     const fd = new FormData();
@@ -707,7 +707,9 @@ export function StoreListingsManagement() {
     // Clean multiple phones
     const validPhones = formPhones.map((p) => p.trim()).filter(Boolean);
     const primaryPhone = validPhones[0] || formPhone.trim();
-    fd.append("phone", primaryPhone);
+    if (primaryPhone) {
+      fd.append("phone", primaryPhone);
+    }
     fd.append("phones", JSON.stringify(validPhones));
 
     // Clean multiple emails
@@ -1883,14 +1885,14 @@ export function StoreListingsManagement() {
                 {/* Multiple Phone Numbers */}
                 <div className="sl-field">
                   <label className="sl-label">
-                    Phone Numbers <span className="req">*</span> <span className="opt">(First number is primary call CTA)</span>
+                    Phone Numbers <span className="opt">(optional - First number is primary call CTA)</span>
                   </label>
                   <div className="sl-dynamic-list">
                     {formPhones.map((ph, idx) => (
                       <div key={idx} className="sl-dynamic-row">
                         <input
                           type="text"
-                          placeholder={idx === 0 ? "Primary Business Phone (e.g. +91 9876543210) *" : `Alternative Phone #${idx + 1}`}
+                          placeholder={idx === 0 ? "Primary Business Phone (e.g. +91 9876543210) (optional)" : `Alternative Phone #${idx + 1}`}
                           value={ph}
                           onChange={(e) => updatePhoneField(idx, e.target.value)}
                           className="sl-input"
@@ -2569,27 +2571,31 @@ export function StoreListingsManagement() {
                       <span>Get Directions</span>
                     </a>
 
-                    <a
-                      href={`tel:${previewStore.phone}`}
-                      className="sl-cta-btn call"
-                    >
-                      <Phone size={16} />
-                      <span>Call Store</span>
-                    </a>
+                    {previewStore.phone && (
+                      <a
+                        href={`tel:${previewStore.phone}`}
+                        className="sl-cta-btn call"
+                      >
+                        <Phone size={16} />
+                        <span>Call Store</span>
+                      </a>
+                    )}
 
-                    <a
-                      href={
-                        previewStore.whatsapp
-                          ? `https://wa.me/${previewStore.whatsapp.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(previewStore.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
-                          : `https://wa.me/${previewStore.phone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(previewStore.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
-                      }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="sl-cta-btn whatsapp"
-                    >
-                      <WhatsAppIcon size={16} />
-                      <span>WhatsApp Store</span>
-                    </a>
+                    {(previewStore.whatsapp || previewStore.phone) && (
+                      <a
+                        href={
+                          previewStore.whatsapp
+                            ? `https://wa.me/${previewStore.whatsapp.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(previewStore.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
+                            : `https://wa.me/${previewStore.phone ? previewStore.phone.replace(/[^0-9]/g, '') : ''}?text=Hi%20${encodeURIComponent(previewStore.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="sl-cta-btn whatsapp"
+                      >
+                        <WhatsAppIcon size={16} />
+                        <span>WhatsApp Store</span>
+                      </a>
+                    )}
 
                     {(previewStore.email || (previewStore.emails && previewStore.emails.length > 0)) && (
                       <a
@@ -2655,18 +2661,20 @@ export function StoreListingsManagement() {
                       </span>
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         {/* Phones list */}
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "12.5px" }}>
-                          <span style={{ color: "#8a7b81", fontSize: "11px", fontWeight: 700 }}>PHONE:</span>
-                          {(previewStore.phones && previewStore.phones.length > 0 ? previewStore.phones : [previewStore.phone]).map((ph, idx) => (
-                            <a
-                              key={idx}
-                              href={`tel:${ph.replace(/[^0-9+]/g, '')}`}
-                              style={{ color: "#4C0F2D", fontWeight: 600, textDecoration: "none", backgroundColor: "#fbf0f4", padding: "2px 6px", borderRadius: "4px" }}
-                            >
-                              {ph}
-                            </a>
-                          ))}
-                        </div>
+                        {(previewStore.phone || (previewStore.phones && previewStore.phones.length > 0)) && (
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", fontSize: "12.5px" }}>
+                            <span style={{ color: "#8a7b81", fontSize: "11px", fontWeight: 700 }}>PHONE:</span>
+                            {(previewStore.phones && previewStore.phones.length > 0 ? previewStore.phones : [previewStore.phone!]).filter(Boolean).map((ph, idx) => (
+                              <a
+                                key={idx}
+                                href={`tel:${ph ? ph.replace(/[^0-9+]/g, '') : ''}`}
+                                style={{ color: "#4C0F2D", fontWeight: 600, textDecoration: "none", backgroundColor: "#fbf0f4", padding: "2px 6px", borderRadius: "4px" }}
+                              >
+                                {ph}
+                              </a>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Emails list */}
                         {(previewStore.email || (previewStore.emails && previewStore.emails.length > 0)) && (

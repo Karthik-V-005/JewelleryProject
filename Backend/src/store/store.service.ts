@@ -141,7 +141,7 @@ export class StoreService {
     }
 
     const phones = this.parseStringArray(dto.phones);
-    const phone = dto.phone?.trim() || (phones.length > 0 ? phones[0] : '');
+    const phone = dto.phone?.trim() || (phones.length > 0 ? phones[0] : null);
     if (phone && !phones.includes(phone)) {
       phones.unshift(phone);
     }
@@ -169,7 +169,7 @@ export class StoreService {
         google_maps_link: dto.googleMapsLink || null,
         email,
         emails,
-        phone,
+        phone: phone || null,
         phones,
         whatsapp: dto.whatsapp || null,
         website: dto.website || null,
@@ -356,12 +356,15 @@ export class StoreService {
       phones = this.parseStringArray(dto.phones);
     }
     if (dto.phone !== undefined) {
-      phone = dto.phone.trim();
+      phone = dto.phone ? dto.phone.trim() : null;
       if (phone && !phones.includes(phone)) {
         phones = [phone, ...phones];
       }
     } else if (phones.length > 0 && !phone) {
       phone = phones[0];
+    }
+    if (dto.phone !== undefined && !dto.phone.trim() && phones.length === 0) {
+      phone = null;
     }
 
     let weeklyHolidays = current.weekly_holidays || [];
@@ -417,7 +420,7 @@ export class StoreService {
         }),
         email,
         emails,
-        phone,
+        phone: phone || null,
         phones,
         ...(dto.whatsapp !== undefined && {
           whatsapp: dto.whatsapp || null,

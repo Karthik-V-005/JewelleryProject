@@ -367,27 +367,31 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
               </a>
             )}
 
-            <a
-              href={`tel:${store.phone}`}
-              className="pub-cta-btn call"
-            >
-              <Phone size={18} style={{ color: "#ffffff" }} />
-              <span style={{ color: "#ffffff" }}>Call Store</span>
-            </a>
+            {store.phone && (
+              <a
+                href={`tel:${store.phone}`}
+                className="pub-cta-btn call"
+              >
+                <Phone size={18} style={{ color: "#ffffff" }} />
+                <span style={{ color: "#ffffff" }}>Call Store</span>
+              </a>
+            )}
 
-            <a
-              href={
-                store.whatsapp
-                  ? `https://wa.me/${store.whatsapp.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(store.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
-                  : `https://wa.me/${store.phone.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(store.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pub-cta-btn whatsapp"
-            >
-              <WhatsAppIcon size={18} style={{ color: "#ffffff" }} />
-              <span style={{ color: "#ffffff" }}>WhatsApp Store</span>
-            </a>
+            {(store.whatsapp || store.phone) && (
+              <a
+                href={
+                  store.whatsapp
+                    ? `https://wa.me/${store.whatsapp.replace(/[^0-9]/g, '')}?text=Hi%20${encodeURIComponent(store.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
+                    : `https://wa.me/${store.phone ? store.phone.replace(/[^0-9]/g, '') : ''}?text=Hi%20${encodeURIComponent(store.store_name)}%2C%20I%20found%20your%20store%20on%20JewellersParadise.`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="pub-cta-btn whatsapp"
+              >
+                <WhatsAppIcon size={18} style={{ color: "#ffffff" }} />
+                <span style={{ color: "#ffffff" }}>WhatsApp Store</span>
+              </a>
+            )}
 
             {(store.email || (store.emails && store.emails.length > 0)) && (
               <a
@@ -510,16 +514,18 @@ export function PublicStoreProfilePage({ slug: propSlug, onNavigateBack }: Publi
                 )}
 
                 {/* Contact numbers */}
-                <div className="pub-detail-row" style={{ marginTop: "8px" }}>
-                  <span className="pub-detail-label">Phone:</span>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-end" }}>
-                    {(store.phones && store.phones.length > 0 ? store.phones : [store.phone]).map((ph, idx) => (
-                      <a key={idx} href={`tel:${ph.replace(/[^0-9+]/g, '')}`} style={{ color: "#4C0F2D", textDecoration: "none", fontWeight: 600 }}>
-                        {ph}
-                      </a>
-                    ))}
+                {(store.phone || (store.phones && store.phones.length > 0)) && (
+                  <div className="pub-detail-row" style={{ marginTop: "8px" }}>
+                    <span className="pub-detail-label">Phone:</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "flex-end" }}>
+                      {(store.phones && store.phones.length > 0 ? store.phones : [store.phone!]).filter(Boolean).map((ph, idx) => (
+                        <a key={idx} href={`tel:${ph.replace(/[^0-9+]/g, '')}`} style={{ color: "#4C0F2D", textDecoration: "none", fontWeight: 600 }}>
+                          {ph}
+                        </a>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Email addresses */}
                 {(store.email || (store.emails && store.emails.length > 0)) && (

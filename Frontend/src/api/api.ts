@@ -477,7 +477,7 @@ export interface StoreListing {
   google_maps_link: string | null;
   email?: string | null;
   emails?: string[];
-  phone: string;
+  phone?: string | null;
   phones?: string[];
   whatsapp: string | null;
   website: string | null;

@@ -52,8 +52,8 @@ export class CreateStoreListingDto {
   emails?: string[] | string;
 
   @IsString()
-  @IsNotEmpty()
-  phone: string;
+  @IsOptional()
+  phone?: string;
 
   @IsOptional()
   phones?: string[] | string;

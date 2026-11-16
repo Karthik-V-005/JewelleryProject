@@ -185,7 +185,7 @@ model StoreListing {
   google_maps_link  String?              @db.Text
   email             String?              @db.VarChar(255)
   emails            String[]             @default([])
-  phone             String               @db.VarChar(25)
+  phone             String?              @db.VarChar(25)
   phones            String[]             @default([])
   whatsapp          String?              @db.VarChar(25)
   website           String?              @db.VarChar(255)
