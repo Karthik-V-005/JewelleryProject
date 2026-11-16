@@ -2,8 +2,8 @@ import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
 
 export class CreateStoreListingDto {
   @IsString()
-  @IsNotEmpty()
-  storeName: string;
+  @IsOptional()
+  storeName?: string;
 
   @IsString()
   @IsOptional()

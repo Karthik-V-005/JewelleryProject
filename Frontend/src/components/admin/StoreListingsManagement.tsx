@@ -679,20 +679,12 @@ export function StoreListingsManagement() {
 
   /* ─── Save Store (Create or Update) ─── */
   const handleSaveStore = async (targetStatus?: "DRAFT" | "PUBLISHED") => {
-    if (!formStoreName.trim()) return toast.error("Store Name is required");
-
-    // Address validation based on Store Type
-    if (formStoreType === "OFFLINE") {
-      if (!formAddress.trim()) return toast.error("Full Street Address is required for offline showrooms");
-      if (!formCity.trim()) return toast.error("City is required");
-      if (!formState.trim()) return toast.error("State is required");
-    }
-    // PIN code is optional for all time per explicit client instruction
-    // Business phone is optional for all (online and offline)
+    // All fields are optional - fallback to Untitled Store if store name is omitted
+    const finalStoreName = formStoreName.trim() || (editingStore ? editingStore.store_name : "Untitled Store");
 
     setIsSubmitting(true);
     const fd = new FormData();
-    fd.append("storeName", formStoreName.trim());
+    fd.append("storeName", finalStoreName);
     if (formSlug.trim()) fd.append("slug", formSlug.trim());
     fd.append("shortDescription", formDescription.trim());
     fd.append("categories", JSON.stringify(formCategories));
@@ -1434,11 +1426,11 @@ export function StoreListingsManagement() {
                 <div className="sl-grid-2">
                   <div className="sl-field">
                     <label className="sl-label">
-                      Store Name <span className="req">*</span>
+                      Store Name <span className="opt">(optional)</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Tanishq Jewellers"
+                      placeholder="e.g. Tanishq Jewellers (optional)"
                       value={formStoreName}
                       onChange={(e) => {
                         setFormStoreName(e.target.value);
@@ -1454,7 +1446,7 @@ export function StoreListingsManagement() {
                   <div className="sl-field">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
                       <label className="sl-label">
-                        Store URL Handle (Slug) <span className="req">*</span>
+                        Store URL Handle (Slug) <span className="opt">(optional)</span>
                       </label>
                       <span style={{ fontSize: "11px", fontWeight: 600, color: "#6b5860", backgroundColor: "#fbf2f6", padding: "2px 8px", borderRadius: "6px", border: "1px solid #ebdbe2" }}>
                         🔗 /store/{formSlug || "your-store-handle"}
@@ -1714,7 +1706,7 @@ export function StoreListingsManagement() {
                 {/* Store Type Selection: Offline Showroom vs Online Store */}
                 <div className="sl-field" style={{ marginBottom: "18px" }}>
                   <label className="sl-label" style={{ fontSize: "13px", fontWeight: 700, color: "#4C0F2D", marginBottom: "8px" }}>
-                    Store Operating Model / Store Type <span className="req">*</span>
+                    Store Operating Model / Store Type <span className="opt">(optional - defaults to Offline)</span>
                   </label>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "12px" }}>
                     {/* Offline Showroom */}
@@ -1796,11 +1788,11 @@ export function StoreListingsManagement() {
 
                 <div className="sl-field">
                   <label className="sl-label">
-                    Full Street Address {formStoreType === "OFFLINE" ? <span className="req">*</span> : <span className="opt">(optional for online store)</span>}
+                    Full Street Address <span className="opt">(optional)</span>
                   </label>
                   <textarea
                     rows={2}
-                    placeholder={formStoreType === "ONLINE" ? "Optional showroom or corporate office address..." : "Shop/Showroom No., Commercial Complex, Main Road..."}
+                    placeholder={formStoreType === "ONLINE" ? "Optional showroom or corporate office address..." : "Shop/Showroom No., Commercial Complex, Main Road... (optional)"}
                     value={formAddress}
                     onChange={(e) => setFormAddress(e.target.value)}
                     className="sl-textarea"
@@ -1810,11 +1802,11 @@ export function StoreListingsManagement() {
                 <div className="sl-grid-2">
                   <div className="sl-field">
                     <label className="sl-label">
-                      City {formStoreType === "OFFLINE" ? <span className="req">*</span> : <span className="opt">(optional)</span>}
+                      City <span className="opt">(optional)</span>
                     </label>
                     <input
                       type="text"
-                      placeholder={formStoreType === "ONLINE" ? "e.g. Coimbatore (or leave blank)" : "e.g. Coimbatore"}
+                      placeholder="e.g. Coimbatore (optional)"
                       value={formCity}
                       onChange={(e) => setFormCity(e.target.value)}
                       className="sl-input"
@@ -1823,11 +1815,11 @@ export function StoreListingsManagement() {
 
                   <div className="sl-field">
                     <label className="sl-label">
-                      State {formStoreType === "OFFLINE" ? <span className="req">*</span> : <span className="opt">(optional)</span>}
+                      State <span className="opt">(optional)</span>
                     </label>
                     <input
                       type="text"
-                      placeholder={formStoreType === "ONLINE" ? "e.g. Tamil Nadu (or leave blank)" : "e.g. Tamil Nadu"}
+                      placeholder="e.g. Tamil Nadu (optional)"
                       value={formState}
                       onChange={(e) => setFormState(e.target.value)}
                       className="sl-input"
@@ -1835,10 +1827,10 @@ export function StoreListingsManagement() {
                   </div>
 
                   <div className="sl-field">
-                    <label className="sl-label">Country</label>
+                    <label className="sl-label">Country <span className="opt">(optional)</span></label>
                     <input
                       type="text"
-                      placeholder="e.g. India"
+                      placeholder="e.g. India (optional)"
                       value={formCountry}
                       onChange={(e) => setFormCountry(e.target.value)}
                       className="sl-input"

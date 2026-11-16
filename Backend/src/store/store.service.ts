@@ -105,7 +105,8 @@ export class StoreService {
       gallery?: Express.Multer.File[];
     },
   ) {
-    const slugBase = dto.slug || `${dto.storeName}-${dto.city}`;
+    const storeName = dto.storeName?.trim() || 'Untitled Store';
+    const slugBase = dto.slug || `${storeName}-${dto.city || 'store'}`;
     const slug = await this.generateUniqueSlug(slugBase);
 
     let logoUrl = dto.logoUrl || null;
@@ -155,7 +156,7 @@ export class StoreService {
     const store = await this.prisma.storeListing.create({
       data: {
         slug,
-        store_name: dto.storeName,
+        store_name: storeName,
         store_type: storeType,
         logo_url: logoUrl,
         cover_photo_url: coverPhotoUrl,
