@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   PendingAdminOffer,
   BackendOfferStatus,
-  getPendingOffers,
   getAllOffers,
 } from "../../api/api";
-import { Search, Loader2, ShoppingBag, Store, Phone, Tag, ChevronRight } from "lucide-react";
+import { Search, Loader2, ShoppingBag, Store, Tag, ChevronRight } from "lucide-react";
 import "../../styles/offer-management.css";
 
 interface OfferManagementProps {

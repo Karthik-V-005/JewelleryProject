@@ -1,9 +1,9 @@
-import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateStoreListingDto {
   @IsString()
-  @IsOptional()
-  storeName?: string;
+  @IsNotEmpty()
+  storeName: string;
 
   @IsString()
   @IsOptional()

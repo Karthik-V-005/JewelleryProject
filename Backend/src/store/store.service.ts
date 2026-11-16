@@ -105,7 +105,7 @@ export class StoreService {
       gallery?: Express.Multer.File[];
     },
   ) {
-    const storeName = dto.storeName?.trim() || 'Untitled Store';
+    const storeName = dto.storeName.trim();
     const slugBase = dto.slug || `${storeName}-${dto.city || 'store'}`;
     const slug = await this.generateUniqueSlug(slugBase);
 

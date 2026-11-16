@@ -4,7 +4,7 @@ import {
   BackendVendorStatus,
   getAllVendors,
 } from "../../api/api";
-import { Search, Loader2, Mail, Phone, MapPin, Building2, User } from "lucide-react";
+import { Search, Loader2, Mail, Phone, MapPin, User } from "lucide-react";
 import "../../styles/vendor-management.css"; // Import the new CSS
 
 interface VendorManagementProps {

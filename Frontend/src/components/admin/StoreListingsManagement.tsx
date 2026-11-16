@@ -679,12 +679,15 @@ export function StoreListingsManagement() {
 
   /* ─── Save Store (Create or Update) ─── */
   const handleSaveStore = async (targetStatus?: "DRAFT" | "PUBLISHED") => {
-    // All fields are optional - fallback to Untitled Store if store name is omitted
-    const finalStoreName = formStoreName.trim() || (editingStore ? editingStore.store_name : "Untitled Store");
+    // Store Name is compulsory
+    if (!formStoreName.trim()) {
+      return toast.error("Store Name is required");
+    }
 
+    // All other fields are optional
     setIsSubmitting(true);
     const fd = new FormData();
-    fd.append("storeName", finalStoreName);
+    fd.append("storeName", formStoreName.trim());
     if (formSlug.trim()) fd.append("slug", formSlug.trim());
     fd.append("shortDescription", formDescription.trim());
     fd.append("categories", JSON.stringify(formCategories));
@@ -1426,11 +1429,11 @@ export function StoreListingsManagement() {
                 <div className="sl-grid-2">
                   <div className="sl-field">
                     <label className="sl-label">
-                      Store Name <span className="opt">(optional)</span>
+                      Store Name <span className="req">*</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Tanishq Jewellers (optional)"
+                      placeholder="e.g. Tanishq Jewellers"
                       value={formStoreName}
                       onChange={(e) => {
                         setFormStoreName(e.target.value);
